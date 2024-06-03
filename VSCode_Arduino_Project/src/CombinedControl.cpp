@@ -12,10 +12,11 @@ CombinedControl :: CombinedControl() {
 
 void CombinedControl :: begin() {
 
-	// byte csPin, byte enablePin, int ID
+	// byte csPin, byte enablePin, int ID. The empty constructor cannot take the pins and so
+	//they must be set after construction by the MotorControl :: set function.
 	motor.set(CSPIN, ENABLEPIN, 1);
 	// double yrange, double ythreshold, int ypin, double xrange, double xthreshold, int xpin
-	joystick.set(200000.0, 0.005 * 200000.0, YAXIS, 1, 0.005 * 1, XAXIS);
+	joystick.set(200000.0, 0.005 * 200000.0, YAXIS, 1, 0.005 * 1, XAXIS); 
 
 	_seekStep = 0;
 	_stepResolution = 256;

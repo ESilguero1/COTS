@@ -2,24 +2,27 @@
 #define DEFINITIONS_H
 
 // Debug Options (set to #ifdef)
-// #define DEBUG_MOTOR		0
-// #define DEBUG_HOME		0
-// #define DEBUG_DIR		1
-// #define DEBUG_COM		0
-
-
+//#define DEBUG_MOTOR  0
+// #define DEBUG_HOME 0
+//#define DEBUG_DIR   1
+// #define DEBUG_COM0
+ 
+ 
 // Define Pins (Set for Ardunio Mega2560)
-#define STOP 			3
-#define CLOCKPIN		11
-#define ENABLEPIN		17
-#define MISOPIN 		50
-#define MOSIPIN 		51
-#define SCKPIN 			52
-#define CSPIN			25
-
-#define XAXIS			A0
-#define YAXIS			A1
-#define SENSOR1PIN 		A2
+#define STOP  3
+#define CLOCKPIN   11
+#define ENABLEPIN 17
+ 
+#define MISOPIN  50 // UNUSED. noted for reference only. Due uses SPI header
+#define MOSIPIN  51 // UNUSED. noted for reference only. Due uses SPI header
+#define SCKPIN 52 // UNUSED. noted for reference only. Due uses SPI header
+ 
+//SPI1 DEVICE PIN definition. IMPORTNAT Due have only 3 SS pins to choose from. 4, 10 and 52.
+#define CSPIN 10
+ 
+#define XAXIS A0
+#define YAXIS A1
+#define SENSOR1PIN A2
 
 // Additional constants
 #define STANDVELOCITY 	100000

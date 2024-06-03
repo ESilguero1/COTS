@@ -35,57 +35,58 @@ MotorControl :: MotorControl() {
 	backwardDirection.address 			= ADDRESS_MODE_VELNEG;
 
 	// Writing to Registers
-	GCONF.rw 					= WRITE;
-	GCONF.address 				= ADDRESS_GCONF;
-	GCONF.data 					= 0x00000000;
+	GCONF.rw= WRITE;
+	GCONF.address = ADDRESS_GCONF;
+	GCONF.data= 0x00000000;
+	 
+	CHOPCONF.rw   = WRITE;
+	CHOPCONF.address = ADDRESS_CHOPCONF;
+	CHOPCONF.data   = 0x000101D5;//TBL=10, HEND = 11, HSTRT=101, TOFF = 0101, CHM=0 (SpreadCycle
+	 
+	IHOLD_IRUN.rw= WRITE;
+	IHOLD_IRUN.address = ADDRESS_IHOLD_IRUN;
+	IHOLD_IRUN.data= 0x00070603;   //IHOLD_IRUN: IHOLD=3, IRUN=10 (max.current), IHOLDDELAY=6
+	 
+	TPOWERDOWN.rw  = WRITE;
+	TPOWERDOWN.address= ADDRESS_TZEROWAIT;
+	TPOWERDOWN.data  = 0x0000000A;//TPOWERDOWN=10: Delay before power down in stand still
+	 
+	PWMCONF.rw   = WRITE;
+	PWMCONF.address = ADDRESS_PWMCONF;
+	PWMCONF.data= 0x00000000;
+	 
+	A1.rw= WRITE;
+	A1.address  = ADDRESS_A1;
+	A1.data= 0x000003E8;  // A1 = 1 000 First acceleration
+	 
+	V1.rw= WRITE;
+	V1.address  = ADDRESS_V1;
+	V1.data= 0x000186A0;  // V1 Acceleration threshold velocity V1
+	 
+	AMAX.rw = WRITE;
+	AMAX.address  = ADDRESS_AMAX;
+	AMAX.data= 0x0000C350;  // AMAX = 500 Acceleration above V1
+	 
+	VMAX.rw = WRITE;
+	VMAX.address  = ADDRESS_VMAX;
+	VMAX.data = 0x000186A0; // VMAX 
+	 
+	DMAX.rw = WRITE;
+	DMAX.address  = ADDRESS_DMAX;
+	DMAX.data = 0x0000C350; // DMAX = 700 Deceleration above V1
+	 
+	D1.rw= WRITE;
+	D1.address  = ADDRESS_D1;
+	D1.data= 0x00000578;  // D1 = 1400 Deceleration below V1
+	 
+	VSTOP.rw = WRITE;
+	VSTOP.address   = ADDRESS_VSTOP;
+	VSTOP.data = 0x0000000A; // VSTOP = 10 Stop velocity (Near to zero)
+	 
+	RAMPMODE.rw= WRITE;
+	RAMPMODE.address  = ADDRESS_RAMPMODE;
+	RAMPMODE.data= 0x00000000;  // RAMPMODE = 0 (Target position move)
 
-	CHOPCONF.rw 				= WRITE;
-	CHOPCONF.address 			= ADDRESS_CHOPCONF;
-	CHOPCONF.data 				= 0x000101D5;
-
-	IHOLD_IRUN.rw 				= WRITE;
-	IHOLD_IRUN.address			= ADDRESS_IHOLD_IRUN;
-	IHOLD_IRUN.data 			= 0x0000190A;
-
-	TPOWERDOWN.rw 				= WRITE;
-	TPOWERDOWN.address 			= ADDRESS_TZEROWAIT;
-	TPOWERDOWN.data 			= 0x0000000A;
-
-	PWMCONF.rw 					= WRITE;
-	PWMCONF.address 			= ADDRESS_PWMCONF;
-	PWMCONF.data 				= 0x00150480;
-
-	A1.rw 						= WRITE;
-	A1.address 					= ADDRESS_A1;
-	A1.data 					= 0x000003E8;
-
-	V1.rw 						= WRITE;
-	V1.address 					= ADDRESS_V1;
-	V1.data 					= 0x000186A0;
-
-	AMAX.rw 					= WRITE;
-	AMAX.address 				= ADDRESS_AMAX;
-	AMAX.data	 				= 0x0000C350;
-
-	VMAX.rw 					= WRITE;
-	VMAX.address 				= ADDRESS_VMAX;
-	VMAX.data 					= 0x000186A0;
-
-	DMAX.rw 					= WRITE;
-	DMAX.address 				= ADDRESS_DMAX;
-	DMAX.data 					= 0x0000C350;
-
-	D1.rw 						= WRITE;
-	D1.address 					= ADDRESS_D1;
-	D1.data 					= 0x00000578;
-
-	VSTOP.rw					= WRITE;
-	VSTOP.address 				= ADDRESS_VSTOP;
-	VSTOP.data					= 0x0000000A;
-
-	RAMPMODE.rw 				= WRITE;
-	RAMPMODE.address 			= ADDRESS_RAMPMODE;
-	RAMPMODE.data 				= 0x00000000;
 
 	XACTUAL.rw 					= WRITE;
 	XACTUAL.address 			= ADDRESS_XACTUAL;
@@ -287,12 +288,13 @@ void MotorControl :: begin() {
 	MotorControl :: powerEnable();
 
 	MotorControl::sendData(&GCONF);
+  MotorControl::sendData(&CHOPCONF);
 	MotorControl::sendData(&IHOLD_IRUN);
 	MotorControl::sendData(&TPOWERDOWN);
 	
-	MotorControl::sendData(&CHOPCONF);
+	
 	MotorControl::sendData(&PWMCONF);
-	MotorControl::sendData(&RAMPMODE);
+	
 	
 	MotorControl::sendData(&A1);
 	MotorControl::sendData(&V1);
@@ -303,9 +305,11 @@ void MotorControl :: begin() {
 
 	MotorControl::sendData(&VSTOP);
 	
+  MotorControl::sendData(&RAMPMODE);
+
 	MotorControl::sendData(&XACTUAL);
 	MotorControl::sendData(&XTARGET);
-	
+  	
 	#ifdef DEBUG_MOTOR
 	Serial.print(motorID);
 	Serial.println(F(" : Motor initialised."));
@@ -1062,7 +1066,7 @@ void MotorControl :: constForward(unsigned long velocity) {
 		Serial.println(MotorControl :: getRampMode());
 	#endif
 
- 	return true;
+ 	//return true;
 }
 
 /* ======================================================================
@@ -1085,7 +1089,7 @@ void MotorControl :: constReverse(unsigned long velocity) {
 		Serial.println(MotorControl :: getRampMode());
 	#endif 
 
- 	return true;
+ 	//return true;
 }
 
 
