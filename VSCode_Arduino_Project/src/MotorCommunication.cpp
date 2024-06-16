@@ -20,6 +20,7 @@ CmdMessenger cmdMessenger = CmdMessenger(Serial);
 String outputStr;
 CombinedControl control;
 
+
 int status[25];
 
 void attachCommandCallbacks();
@@ -68,10 +69,6 @@ void setup() {
 	pinMode(ENABLEPIN, OUTPUT);
 	pinMode(STOP, OUTPUT);
 
-	//set up Timer1
-  	//TCCR1A = bit (COM1A0);                //toggle OC1A on Compare Match
-  	//TCCR1B = bit (WGM12) | bit (CS10);    //CTC, no prescaling
-  	//OCR1A = 0;                            //output every cycle
 
 	// initialize the SPI interface with TMC5130 settings
 	SPI.setBitOrder(MSBFIRST);
@@ -81,7 +78,7 @@ void setup() {
 
   	// =============== Setup Board Configuration and Sensors ===============
 
-	Serial.begin(57600);
+	Serial.begin(115200);
 	Serial.println("starting");
 
 	// Macro for Arduino AVR Boards (setting voltages and bit resolution)

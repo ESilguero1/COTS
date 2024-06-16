@@ -4,7 +4,7 @@
 struct flags
 {
 	public:
-		bool isJSEnable 		= false;
+		bool isJSEnable 		= true;
 		bool isSeeking			= false;
 		bool direction			= true;
 		bool isPositioning		= false;

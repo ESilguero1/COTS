@@ -23,6 +23,8 @@
 #define XAXIS A0
 #define YAXIS A1
 #define SENSOR1PIN A2
+#define ADC_RESOLUTION_FLOAT 4096.0
+
 
 // Additional constants
 #define STANDVELOCITY 	100000

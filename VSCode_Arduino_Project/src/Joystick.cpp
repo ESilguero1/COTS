@@ -32,7 +32,7 @@ Joystick :: Joystick(double yrange, double ythreshold, int ypin, double xrange, 
 	_joystickStop	= true;
 	
 	_beta = - yrange;
-	_alpha = (yrange - _beta) / 1023.0;
+	_alpha = (yrange - _beta) / ADC_RESOLUTION_FLOAT;
 }
 
 void Joystick :: set(double yrange, double ythreshold, int ypin, double xrange, double xthreshold, int xpin) {
@@ -46,7 +46,7 @@ void Joystick :: set(double yrange, double ythreshold, int ypin, double xrange, 
 	_xthreshold		= xthreshold;
 	
 	_beta 			= - yrange;
-	_alpha 			= (yrange - _beta) / 1023.0;
+	_alpha 			= (yrange - _beta) / ADC_RESOLUTION_FLOAT;
 }
 
 void Joystick :: begin() {
