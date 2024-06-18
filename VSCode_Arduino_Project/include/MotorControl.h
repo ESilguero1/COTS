@@ -10,7 +10,7 @@
    ======================================================================== */
 
 #define MotorControl_H
-#include "Definitions.h"
+#include "System_definitions.h"
 #include <SPI.h>
 #include "Arduino.h"
 #include "Joystick.h"

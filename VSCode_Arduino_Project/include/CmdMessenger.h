@@ -95,7 +95,7 @@ private:
 
 	// **** Command processing ****
 
-	inline uint8_t processLine(char serialChar) __attribute__((always_inline));
+	
 	inline void handleMessage() __attribute__((always_inline));
 	inline bool blockedTillReply(unsigned int timeout = DEFAULT_TIMEOUT, byte ackCmdId = 1) __attribute__((always_inline));
 	inline bool checkForAck(byte AckCommand) __attribute__((always_inline));
@@ -171,7 +171,7 @@ public:
 	void printLfCr(bool addNewLine = true);
 	void attach(messengerCallbackFunction newFunction);
 	void attach(byte msgId, messengerCallbackFunction newFunction);
-
+	uint8_t processLine(char serialChar) __attribute__((always_inline));
 	// **** Command processing ****
 
 	void feedinSerialData();

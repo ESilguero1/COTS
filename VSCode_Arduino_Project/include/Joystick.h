@@ -10,7 +10,7 @@
    ======================================================================== */
 
 #define Joystick_H
-#include "Definitions.h"
+#include "System_definitions.h"
 #include "Arduino.h"
 
 class Joystick {
