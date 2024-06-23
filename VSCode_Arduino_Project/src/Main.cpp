@@ -67,7 +67,7 @@ void setup() {
 	pinMode(CLOCKPIN,OUTPUT);
 	pinMode(CSPIN, OUTPUT);
 	pinMode(ENABLEPIN, OUTPUT);
-	pinMode(STOP, OUTPUT);
+	pinMode(STOP, INPUT);
 
 
 	// initialize the SPI interface with TMC5130 settings
@@ -116,8 +116,9 @@ void setup() {
 	attachCommandCallbacks();
 
 	
-	control.goPos(200*256*20);
+	control.goPos(512000);
 	pinMode(12, OUTPUT);
+  	digitalWrite(12, HIGH);
 }
 
 void loop() {

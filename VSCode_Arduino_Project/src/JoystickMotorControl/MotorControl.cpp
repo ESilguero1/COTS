@@ -35,6 +35,7 @@ MotorControl :: MotorControl() {
 	backwardDirection.address 			= ADDRESS_MODE_VELNEG;
 
 	// Writing to Registers
+
 	GCONF.rw= WRITE;
 	GCONF.address = ADDRESS_GCONF;
 	GCONF.data= 0x00000000;
@@ -69,7 +70,7 @@ MotorControl :: MotorControl() {
 	 
 	VMAX.rw = WRITE;
 	VMAX.address  = ADDRESS_VMAX;
-	VMAX.data = 0x000186A0; // VMAX 
+	VMAX.data = 200000; // VMAX 
 	 
 	DMAX.rw = WRITE;
 	DMAX.address  = ADDRESS_DMAX;

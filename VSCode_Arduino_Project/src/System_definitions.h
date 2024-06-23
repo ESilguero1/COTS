@@ -9,7 +9,7 @@
  
  
 // Define Pins (Set for Ardunio Mega2560)
-#define STOP  3
+#define STOP  13
 #define CLOCKPIN   11
 #define ENABLEPIN 17
  
