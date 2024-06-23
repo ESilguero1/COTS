@@ -20,6 +20,7 @@ CmdMessenger cmdMessenger = CmdMessenger(Serial);
 String outputStr;
 CombinedControl control;
 
+uint8_t test_target_motor=0;
 
 int status[25];
 
@@ -110,7 +111,7 @@ void setup() {
 
 	// Initialize the motor and Sensor objects
 	control.begin();
-uint8_t test_target_motor=0;
+
 	outputStr.reserve(128);
 	cmdMessenger.printLfCr();
 	attachCommandCallbacks();
@@ -132,7 +133,7 @@ void loop() {
 
 	// 12 us
 	if ( motorFlags.isSeeking ) {
-		motorFlags.isSeeking = !control.seek(motorFlags.direction);
+		motorFlags.isSeeking = !control.seek(test_target_motor, motorFlags.direction);
 	}
 
 	// 50 us
@@ -380,12 +381,14 @@ void onGetPower() {
 // Format : not changes to outputStr
 void onConstantForward() {
 	if ( _checkFlags() ) {
+		uint8_t target_motor = cmdMessenger.readCharArg();
 		double velocity = cmdMessenger.readDoubleArg();
+		
 		if (velocity == 0) {
 			onFail();
 		}
 		else {
-			control.constForward(velocity);
+			control.constForward(target_motor, velocity);
 			#ifdef DEBUG_COM
 				Serial.print("Velocity: ");
 				Serial.println(velocity);
@@ -401,12 +404,13 @@ void onConstantForward() {
 // Format : not changes to outputStr
 void onConstantBackward() {
 	if ( _checkFlags() ) {
+		uint8_t target_motor = cmdMessenger.readCharArg();
 		double velocity = cmdMessenger.readDoubleArg();
 		if ( velocity == 0 ) {
 			onFail();
 		}
 		else {
-			control.constReverse(velocity);
+			control.constReverse(target_motor, velocity);
 			#ifdef DEBUG_COM
 				Serial.print("Velocity: ");
 				Serial.println(velocity);
@@ -423,8 +427,10 @@ void onConstantBackward() {
 void onMovePosition() {
 	_checkJS();
 	if ( !motorFlags.isSeeking ) {
+		uint8_t target_motor = cmdMessenger.readCharArg();
 		double pos = cmdMessenger.readDoubleArg();
-		control.goPos(pos); // Note that the default if no argument read is to go home
+		
+		control.goPos(target_motor, pos); // Note that the default if no argument read is to go home
 		#ifdef DEBUG_COM
 			Serial.print("Position: ");
 			Serial.println(pos);
@@ -440,13 +446,14 @@ void onMovePosition() {
 void onMoveForward() {
 	_checkJS();
 	if ( !motorFlags.isSeeking ) {
+		uint8_t target_motor = cmdMessenger.readCharArg();
 		double stepsForward = cmdMessenger.readDoubleArg();
 		double velocity = cmdMessenger.readDoubleArg();
 		if(stepsForward == 0 || velocity == 0) {
 			onFail();
 		}
 		else { 
-			control.forward(stepsForward, velocity);
+			control.forward(target_motor, velocity);
 
 			#ifdef DEBUG_CO
 				Serial.print("Velocity: ");
@@ -466,13 +473,14 @@ void onMoveForward() {
 void onMoveBackward() {
 	_checkJS();
 	if ( !motorFlags.isSeeking ) {
+		uint8_t target_motor = cmdMessenger.readCharArg();
 		double stepsForward = cmdMessenger.readDoubleArg();
 		double velocity = cmdMessenger.readDoubleArg();
 		if(stepsForward == 0 || velocity == 0) {
 			onFail();
 		}
 		else {
-			control.reverse(stepsForward, velocity);
+			control.reverse(target_motor, stepsForward, velocity);
 
 			#ifdef DEBUG_COM
 				Serial.print("Velocity: ");
@@ -583,7 +591,8 @@ void onJSDisable() {
 
 // Format : not changes to outputStr
 void onMotorStop() {
-	control.stop();
+	uint8_t target_motor = cmdMessenger.readCharArg();
+	control.stop(target_motor);
 	motorFlags.isJSEnable = false;
 	motorFlags.isSeeking = false;
 	motorFlags.isPositioning = false;
@@ -593,7 +602,8 @@ void onMotorStop() {
 // Format : not changes to outputStr
 void onMotorHome() {
 	if ( _checkFlags() ) {
-		control.setHome(uint8_t motor_id);
+		uint8_t target_motor = cmdMessenger.readCharArg();
+		control.setHome(target_motor);
 		onSuccess();
 	}
 	else {

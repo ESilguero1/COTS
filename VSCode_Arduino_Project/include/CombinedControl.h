@@ -32,13 +32,13 @@ class CombinedControl {
       //===== MOVE FUNCTIONS =====
 
       void goPos(uint8_t motor_id,unsigned long position);                                  // brings the motor back to its home position
-      void setHome(uint8 motor_id);                                                      // sets the home position using the right hand switch
+      void setHome(uint8_t motor_id);                                                      // sets the home position using the right hand switch
       void forward(uint8_t motor_id, unsigned long velocity);    // push forward at the specified velocity
-      void reverse(uint8_t stepsBackward, unsigned long velocity);   // moves motor in reverse direction
-      void constForward(uint8_t velocity);                           // moves the motor forward constantly
-      void constReverse(uint8_t velocity);                           // moves the motor backwards constantly
-      void stop();                                                         // stops the motor when it is in continuous movement
-      bool seek(bool goForward);                                           // goes until a switch as defined by goForward is pressed
+      void reverse(uint8_t motor_id, uint8_t stepsBackward, unsigned long velocity);   // moves motor in reverse direction
+      void constForward(uint8_t motor_id, uint8_t velocity);                           // moves the motor forward constantly
+      void constReverse(uint8_t motor_id,uint8_t velocity);                           // moves the motor backwards constantly
+      void stop(uint8_t motor_id);                                                         // stops the motor when it is in continuous movement
+      bool seek(uint8_t motor_id, bool goForward);                                           // goes until a switch as defined by goForward is pressed
 
       //===== INFO FUNCTIONS =====
 

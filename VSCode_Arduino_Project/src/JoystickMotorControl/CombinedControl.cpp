@@ -145,7 +145,7 @@ void CombinedControl :: setHome(uint8_t motor_id) {
 	successfully sent.
  ====================================================================== */
 
-void CombinedControl :: forward(unsigned long stepsForward, unsigned long velocity) {
+void CombinedControl :: forward(uint8_t motor_id, unsigned long stepsForward, unsigned long velocity) {
 	motor.forward(stepsForward, velocity);
 }
 
@@ -155,7 +155,7 @@ void CombinedControl :: forward(unsigned long stepsForward, unsigned long veloci
 	successfully sent.
  ====================================================================== */
 
-void CombinedControl :: reverse(unsigned long stepsBackward, unsigned long velocity) {
+void CombinedControl :: reverse(uint8_t motor_id, unsigned long stepsBackward, unsigned long velocity) {
 	motor.reverse(stepsBackward, velocity);
 }
 
@@ -164,7 +164,7 @@ void CombinedControl :: reverse(unsigned long stepsBackward, unsigned long veloc
 	constant velocity
  ====================================================================== */
 
-void CombinedControl :: constForward(unsigned long velocity) {
+void CombinedControl :: constForward(uint8_t motor_id, unsigned long velocity) {
 	motor.constForward(velocity);
 }
 
@@ -173,7 +173,7 @@ void CombinedControl :: constForward(unsigned long velocity) {
 	constant velocity
  ====================================================================== */
 
-void CombinedControl :: constReverse(unsigned long velocity) {
+void CombinedControl :: constReverse(uint8_t motor_id, unsigned long velocity) {
 	motor.constReverse(velocity);
 }
 
@@ -182,7 +182,7 @@ void CombinedControl :: constReverse(unsigned long velocity) {
 	or in a constant forward movement.
  ====================================================================== */
 
-void CombinedControl :: stop() {
+void CombinedControl :: stop(uint8_t motor_id) {
 	motor.stop();
 }
 
@@ -191,7 +191,7 @@ void CombinedControl :: stop() {
 	to indicate the stopping of the motor.
  ====================================================================== */
 
-bool CombinedControl :: seek(bool goForward) {
+bool CombinedControl :: seek(uint8_t motor_id, bool goForward) {
 
 	bool done = false;
 
