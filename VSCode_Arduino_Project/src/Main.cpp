@@ -67,7 +67,7 @@ void setup() {
 	pinMode(CLOCKPIN,OUTPUT);
 	pinMode(CSPIN, OUTPUT);
 	pinMode(ENABLEPIN, OUTPUT);
-	pinMode(STOP, INPUT);
+	pinMode(STOP, OUTPUT);
 
 
 	// initialize the SPI interface with TMC5130 settings
@@ -110,15 +110,14 @@ void setup() {
 
 	// Initialize the motor and Sensor objects
 	control.begin();
-
+uint8_t test_target_motor=0;
 	outputStr.reserve(128);
 	cmdMessenger.printLfCr();
 	attachCommandCallbacks();
 
 	
-	control.goPos(512000);
+	control.goPos(test_target_motor, 5);
 	pinMode(12, OUTPUT);
-  	digitalWrite(12, HIGH);
 }
 
 void loop() {
@@ -594,7 +593,7 @@ void onMotorStop() {
 // Format : not changes to outputStr
 void onMotorHome() {
 	if ( _checkFlags() ) {
-		control.setHome();
+		control.setHome(uint8_t motor_id);
 		onSuccess();
 	}
 	else {

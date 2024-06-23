@@ -122,7 +122,7 @@ bool CombinedControl :: _timer(unsigned long lastReadTime) {
 	position '0' will send it back to the home state.
  ====================================================================== */
 
-void CombinedControl :: goPos(unsigned long position) {
+void CombinedControl :: goPos(uint8_t motor_id, unsigned long position) {
 	motor.goPos(position);
 }
 
@@ -132,7 +132,7 @@ void CombinedControl :: goPos(unsigned long position) {
 	steps have been completed successfully.
  ====================================================================== */
 
-void CombinedControl :: setHome() {
+void CombinedControl :: setHome(uint8_t motor_id) {
 	bool setHome = false;
 	while (!setHome) {
 		setHome = motor.setHome();
