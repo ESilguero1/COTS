@@ -11,19 +11,19 @@
 // Define Pins (Set for Ardunio Mega2560)
 #define STOP  13
 #define CLOCKPIN   11
-#define ENABLEPIN 17
+#define ENABLEPIN 6
  
 #define MISOPIN  50 // UNUSED. noted for reference only. Due uses SPI header
 #define MOSIPIN  51 // UNUSED. noted for reference only. Due uses SPI header
 #define SCKPIN 52 // UNUSED. noted for reference only. Due uses SPI header
  
 //SPI1 DEVICE PIN definition. IMPORTNAT Due have only 3 SS pins to choose from. 4, 10 and 52.
-#define CSPIN 10
+#define CSPIN 11
  
 #define XAXIS A0
 #define YAXIS A1
 #define SENSOR1PIN A2
-#define ADC_RESOLUTION_FLOAT 4096.0
+#define ADC_RESOLUTION_FLOAT 1024.0
 
 
 // Additional constants
