@@ -3,29 +3,23 @@
 #include "Enum.h"
 #include "debugutils.h"
 #include "CombinedControl.h"
-#include "Flags.h"
+
 
 #define DEBUG 1
+#define DEBUG_CO 1
 
-// Arduino Information
-bool 			analogRefInternal 	= false;
-int 			ADCResolution 		= 10; 			// Arduino Mega is 10-bit resolution
-float 			ADCRefVolt 			= 5; 			// Arduino Mega has a max input voltage of 5V
-
-// Timing bit for loop
-int b = 0;
 
 // Build extra objects
 CmdMessenger cmdMessenger = CmdMessenger(Serial);
 String outputStr;
 CombinedControl control;
+flags motorFlags[2];
 
-uint8_t test_target_motor=0;
 
 int status[25];
 
 void attachCommandCallbacks();
-void _checkJS();
+void _checkJS(uint8_t motorID);
 void OnUnknownCommand();
 void onRequestMotorStatus() ;
 void onRequestStallStatus() ;
@@ -65,10 +59,11 @@ void setup() {
 	// =============== Setup Motor Control ===============
 
 	// turn on general pins
-	pinMode(CLOCKPIN,OUTPUT);
-	pinMode(CSPIN, OUTPUT);
-	pinMode(ENABLEPIN, OUTPUT);
-	pinMode(STOP, OUTPUT);
+	pinMode(MTR_CS0, OUTPUT);
+	pinMode(MTR_CS1, OUTPUT);
+	pinMode(MTR_ENA_0, OUTPUT);
+	pinMode(MTR_ENA_1, OUTPUT);
+	pinMode(JS_STOP_SWTICH, INPUT);
 
 
 	// initialize the SPI interface with TMC5130 settings
@@ -80,32 +75,8 @@ void setup() {
   	// =============== Setup Board Configuration and Sensors ===============
 
 	Serial.begin(115200);
-	Serial.println("starting");
+	Serial.println("starting the coolest project ever");
 
-	// Macro for Arduino AVR Boards (setting voltages and bit resolution)
-	// Configures the reference voltage with built-in 2.56V reference (Arduino Mega only)
-	#ifdef __AVR_ATmega2560__
-
-		analogRefInternal = false;
-		ADCRefVolt = 5; 								
-		analogReference(DEFAULT);
-		
-		if(DEBUG) {
-			DEBUG_PRINT("INFO: Analog Reference 5V Default");
-		}
-	#endif
-
-	// Macro for Arduino SAMD Boards (setting voltages and bit resolution)
-	#ifdef __SAM3X8E__ 
-/* 		ADCResolution = 12;
-		ADCRefVolt = 3.3;
-		analogReadResolution(ADCResolution); //changes the default resolution from 10 - 12 bits
-		
-		for ( int i = 0; i < numSensors; i++ ) {
-			sensorList[i] -> setSaturatedVal(3690);
-			sensorList[i] -> setMinimumVal(250);
-		} */
-	#endif
 
 	// =============== Initialize Objects ===============
 
@@ -117,29 +88,34 @@ void setup() {
 	attachCommandCallbacks();
 
 	
-	control.goPos(test_target_motor, 5);
-	pinMode(12, OUTPUT);
+	//control.goPos(Test_Motor, 512000);
+
 }
 
 void loop() {
 
 	// 20 us
-	cmdMessenger.feedinSerialData();
+	cmdMessenger.feedinSerialData(); /* Process incoming messages */
 
 	// 100 us
-	if ( motorFlags.isJSEnable ) {
+	if ( motorFlags[0].isJSEnable ) 
+	{
 		control.enableJoystick();
 	}
 
-	// 12 us
-	if ( motorFlags.isSeeking ) {
-		motorFlags.isSeeking = !control.seek(test_target_motor, motorFlags.direction);
+	for (uint8_t motor = 0; motor < 2; motor++)
+	{
+		// 12 us
+		if ( motorFlags[motor].isSeeking ) {
+			motorFlags[motor].isSeeking = !control.seek(motor, motorFlags[motor].direction);
+		}
+
+		// 50 us
+		if ( motorFlags[motor].isPositioning ) {
+			motorFlags[motor].isPositioning = !control.standstill(motor);
+		}
 	}
 
-	// 50 us
-	if ( motorFlags.isPositioning ) {
-		motorFlags.isPositioning = !control.standstill();
-	}
 }
 
 
@@ -208,17 +184,20 @@ void onFail() {
 	Serial.println(outputStr);
 }
 
-bool _checkFlags() {
+bool _checkFlags(uint8_t motorID) 
+{
 	bool done = false;
-	_checkJS();
-	if ( !motorFlags.isSeeking && !motorFlags.isPositioning) {
+	_checkJS(motorID);
+	if ( !motorFlags[motorID].isSeeking && !motorFlags[motorID].isPositioning) 
+	{
 		done = true;
 	}
 	return done;
 }
 
-void _checkJS() {
-	if (motorFlags.isJSEnable) {
+void _checkJS(uint8_t motorID) {
+	if (motorFlags[motorID].isJSEnable) 
+	{
 		onJSDisable();
 	}
 }
@@ -250,14 +229,16 @@ void OnUnknownCommand() {
 }
 
 // Format : outputStr = "m,time,bit0,bit1,...,bit24;"
-void onRequestMotorStatus() {
+void onRequestMotorStatus() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	outputStr.remove(0);
 	outputStr.concat(F("m,"));
 	outputStr.concat(millis());
 
-	control.status(&status[0]);
+	control.status(target_motor, &status[0]);
 
-	for ( int i = 0; i < STATUS_SIZE; i++ ) {
+	for ( int i = 0; i < MTR_STATUS_SIZE; i++ ) {
 		outputStr.concat(F(","));
 		outputStr.concat(status[i]);
 	}
@@ -267,123 +248,139 @@ void onRequestMotorStatus() {
 }
 
 // Format : outputStr = "g,time,status;"
-void onRequestStallStatus() {
+void onRequestStallStatus() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	outputStr.remove(0);
 	outputStr.concat(F("g,"));
 	outputStr.concat(millis());
 	outputStr.concat(F(","));
 
-	_binaryDisplay(control.sgStatus());
+	_binaryDisplay(control.sgStatus(target_motor));
 
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
 }
 
 // Format : outputStr = "m,time,oldpos,newpos;"
-void onRequestSetPosNoMove() {
+void onRequestSetPosNoMove() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	outputStr.remove(0);
 	outputStr.concat(F("d,"));
 	outputStr.concat(millis());
 	outputStr.concat(F(","));
 
-	outputStr.concat(control.getXactual());
+	outputStr.concat(control.getXactual(target_motor));
 	outputStr.concat(F(","));
-	control.changePosNoMove(cmdMessenger.readDoubleArg());
-	outputStr.concat(control.getXactual());
+	control.changePosNoMove(target_motor, cmdMessenger.readDoubleArg());
+	outputStr.concat(control.getXactual(target_motor));
 
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
 }
 
 // Format : outputStr = "A,ADCBits;"
-void onGetADCBits() {
+void onGetADCBits() 
+{
     outputStr.remove(0);
     outputStr.concat(F("a,"));
-    outputStr.concat(ADCResolution);
+    //outputStr.concat(ADCResolution);
     outputStr.concat(F(";"));
     Serial.println(outputStr);
 }
 
 // Format : outputStr = "V,ADCVolts;"
-void onGetADCRefVolt() {
+void onGetADCRefVolt() 
+{
     outputStr.remove(0);
     outputStr.concat(F("v,"));
-    outputStr.concat(ADCRefVolt);
+    //outputStr.concat(ADCRefVolt);
     outputStr.concat(F(";"));
     Serial.println(outputStr);
 }
 
 // Format : outputStr = "x,time,xposition;" (Note that it is a 200 stepper motor)
-void onGetXactual() {
+void onGetXactual() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	outputStr.remove(0);
   	outputStr.concat(F("x,"));
   	outputStr.concat(millis());
   	outputStr.concat(F(","));
 
-  	outputStr.concat(control.getXactual());
+  	outputStr.concat(control.getXactual(target_motor));
 
   	outputStr.concat(F(";"));
   	Serial.println(outputStr);
 }
 
 // Format : outputStr = "v,time,velocity;"
-void onGetVelocity() {
+void onGetVelocity() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	outputStr.remove(0);
   	outputStr.concat(F("v,"));
   	outputStr.concat(millis());
   	outputStr.concat(F(","));
 
-  	outputStr.concat(control.getVelocity());
+  	outputStr.concat(control.getVelocity(target_motor));
 
   	outputStr.concat(F(";"));
   	Serial.println(outputStr);
 }
 
 // Format : outputStr = "a,time,acceleration;"
-void onGetAcceleration() {
+void onGetAcceleration() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	outputStr.remove(0);
   	outputStr.concat(F("a,"));
   	outputStr.concat(millis());
   	outputStr.concat(F(","));
 
-  	outputStr.concat(control.getAcceleration());
+  	outputStr.concat(control.getAcceleration(target_motor));
 
   	outputStr.concat(F(";"));
   	Serial.println(outputStr);
 }
 
 // Format : outputStr = "d,time,deceleration;"
-void onGetDeceleration() {
+void onGetDeceleration() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	outputStr.remove(0);
   	outputStr.concat(F("d,"));
   	outputStr.concat(millis());
   	outputStr.concat(F(","));
 
-  	outputStr.concat(control.getDeceleration());
+  	outputStr.concat(control.getDeceleration(target_motor));
 
   	outputStr.concat(F(";"));
   	Serial.println(outputStr);
 }
 
 // Format : outputStr = "P,time,power;"
-void onGetPower() {
+void onGetPower() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	outputStr.remove(0);
   	outputStr.concat(F("P,"));
   	outputStr.concat(millis());
   	outputStr.concat(F(","));
 
-  	outputStr.concat(control.getPower());
+  	outputStr.concat(control.getPower(target_motor));
 
   	outputStr.concat(F(";"));
   	Serial.println(outputStr);
 }
 
 // Format : not changes to outputStr
-void onConstantForward() {
-	if ( _checkFlags() ) {
-		uint8_t target_motor = cmdMessenger.readCharArg();
+void onConstantForward() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
+	if ( _checkFlags(target_motor) ) {
 		double velocity = cmdMessenger.readDoubleArg();
-		
 		if (velocity == 0) {
 			onFail();
 		}
@@ -402,9 +399,11 @@ void onConstantForward() {
 }
 
 // Format : not changes to outputStr
-void onConstantBackward() {
-	if ( _checkFlags() ) {
-		uint8_t target_motor = cmdMessenger.readCharArg();
+void onConstantBackward() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
+	if ( _checkFlags(target_motor) ) 
+	{
 		double velocity = cmdMessenger.readDoubleArg();
 		if ( velocity == 0 ) {
 			onFail();
@@ -424,12 +423,12 @@ void onConstantBackward() {
 }
 
 // Format : not changes to outputStr
-void onMovePosition() {
-	_checkJS();
-	if ( !motorFlags.isSeeking ) {
-		uint8_t target_motor = cmdMessenger.readCharArg();
+void onMovePosition() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
+	_checkJS(target_motor);
+	if ( !motorFlags[target_motor].isSeeking ) {
 		double pos = cmdMessenger.readDoubleArg();
-		
 		control.goPos(target_motor, pos); // Note that the default if no argument read is to go home
 		#ifdef DEBUG_COM
 			Serial.print("Position: ");
@@ -443,17 +442,18 @@ void onMovePosition() {
 }
 
 // Format : not changes to outputStr
-void onMoveForward() {
-	_checkJS();
-	if ( !motorFlags.isSeeking ) {
-		uint8_t target_motor = cmdMessenger.readCharArg();
+void onMoveForward() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
+	_checkJS(target_motor);
+	if ( !motorFlags[target_motor].isSeeking ) {
 		double stepsForward = cmdMessenger.readDoubleArg();
 		double velocity = cmdMessenger.readDoubleArg();
 		if(stepsForward == 0 || velocity == 0) {
 			onFail();
 		}
 		else { 
-			control.forward(target_motor, velocity);
+			control.forward(0, stepsForward, velocity);
 
 			#ifdef DEBUG_CO
 				Serial.print("Velocity: ");
@@ -470,17 +470,18 @@ void onMoveForward() {
 }
 
 // Format : not changes to outputStr
-void onMoveBackward() {
-	_checkJS();
-	if ( !motorFlags.isSeeking ) {
-		uint8_t target_motor = cmdMessenger.readCharArg();
+void onMoveBackward() 
+{
+	uint8_t targetMotor = cmdMessenger.readCharArg();
+	_checkJS(targetMotor);
+	if ( !motorFlags[targetMotor].isSeeking ) {
 		double stepsForward = cmdMessenger.readDoubleArg();
 		double velocity = cmdMessenger.readDoubleArg();
 		if(stepsForward == 0 || velocity == 0) {
 			onFail();
 		}
 		else {
-			control.reverse(target_motor, stepsForward, velocity);
+			control.reverse(targetMotor, stepsForward, velocity);
 
 			#ifdef DEBUG_COM
 				Serial.print("Velocity: ");
@@ -497,46 +498,54 @@ void onMoveBackward() {
 }
 
 // Format : not changes to outputStr
-void onVelocity() {
+void onVelocity() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	double velocity = cmdMessenger.readDoubleArg();
 
 	if (velocity == 0) {
 		onFail();
 	}
 	else {
-		control.setVelocity(velocity);
+		control.setVelocity(target_motor, velocity);
 		onSuccess();
 	}
 }
 
 // Format : not changes to outputStr
-void onAcceleration() {
+void onAcceleration()
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	double acceleration = cmdMessenger.readDoubleArg();
 
 	if(acceleration == 0) {
 		onFail();
 	}
 	else {
-		control.setAcceleration(acceleration);
+		control.setAcceleration(target_motor, acceleration);
 		onSuccess();
 	}
 }
 
 // Format : not changes to outputStr
-void onDeceleration() {
+void onDeceleration() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	double deceleration = cmdMessenger.readDoubleArg();
 
 	if(deceleration == 0) {
 		onFail();
 	}
 	else {
-		control.setDeceleration(deceleration);
+		control.setDeceleration(target_motor, deceleration);
 		onSuccess();
 	}
 }
 
 // Format : not changes to outputStr
-void onPower() {
+void onPower() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	double holdPower = cmdMessenger.readDoubleArg();
 	double runPower = cmdMessenger.readDoubleArg();
 
@@ -544,31 +553,32 @@ void onPower() {
 		onFail();
 	}
 	else {
-		control.setPower(holdPower, runPower);
+		control.setPower(target_motor, holdPower, runPower);
 		onSuccess();
 	}
 }
 
 // Format : not changes to outputStr
-void onDirection() {
-
+void onDirection() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	double direction = cmdMessenger.readDoubleArg();
 
 	switch((int)direction) {
 		case(2): {
-			control.setDirections(true, false);
+			control.setDirections(target_motor, true, false);
 		} break;
 
 		case(3): {
-			control.setDirections(false, true);
+			control.setDirections(target_motor, false, true);
 		} break;
 
 		case(4): {
-			control.setDirections(false, false);
+			control.setDirections(target_motor, false, false);
 		} break;
 
 		default: {
-			control.setDirections(true, true);
+			control.setDirections(target_motor, true, true);
 		}
 	}
 
@@ -576,33 +586,41 @@ void onDirection() {
 }
 
 // Format : not changes to outputStr
-void onJSEnable() {
-	motorFlags.isJSEnable = true;
+void onJSEnable() 
+{
+	motorFlags[0].isJSEnable = true;
 	control.enableJoystick();
 	onSuccess();
 }
 
 // Format : not changes to outputStr
-void onJSDisable() {
-	motorFlags.isJSEnable = false;
+void onJSDisable() 
+{
+	motorFlags[0].isJSEnable = false;
 	control.disableJoystick();
 	onSuccess();
 }
 
 // Format : not changes to outputStr
-void onMotorStop() {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+void onMotorStop() 
+{
+  uint8_t target_motor = cmdMessenger.readCharArg();
+
+  Serial.print("TargetMotor: ");
+  Serial.println(target_motor);
 	control.stop(target_motor);
-	motorFlags.isJSEnable = false;
-	motorFlags.isSeeking = false;
-	motorFlags.isPositioning = false;
+	motorFlags[target_motor].isJSEnable = false;
+	motorFlags[target_motor].isSeeking = false;
+	motorFlags[target_motor].isPositioning = false;
 	onSuccess();
 }
 
 // Format : not changes to outputStr
-void onMotorHome() {
-	if ( _checkFlags() ) {
-		uint8_t target_motor = cmdMessenger.readCharArg();
+void onMotorHome() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
+	if ( _checkFlags(target_motor) )
+	 {
 		control.setHome(target_motor);
 		onSuccess();
 	}
@@ -612,23 +630,27 @@ void onMotorHome() {
 }
 
 // Format : not changes to outputStr
-void onSeek() {
-	_checkJS();
-	if (motorFlags.isPositioning) {
+void onSeek() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
+	_checkJS(target_motor);
+	if (motorFlags[target_motor].isPositioning) {
 		onFail();
 	}
 	else {
-		motorFlags.direction = cmdMessenger.readBoolArg();
-		motorFlags.isSeeking = true;
+		motorFlags[target_motor].direction = cmdMessenger.readBoolArg();
+		motorFlags[target_motor].isSeeking = true;
 		onSuccess();
 	}
 }
 
 // Format : not changes to outputStr
-void onResolution() {
+void onResolution() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	int resolution = cmdMessenger.readInt16Arg();
 	Serial.println(resolution);
-	control.setResolution(resolution);
+	control.setResolution(target_motor, resolution);
 	onSuccess();
 }
 
@@ -641,10 +663,12 @@ void onResolution() {
 ======================================= */
 
 // Format : not changes to outputStr
-void onActiveSettings() {
+void onActiveSettings() 
+{
+	uint8_t target_motor = cmdMessenger.readCharArg();
 	bool fw = cmdMessenger.readBoolArg();
 	bool bw = cmdMessenger.readBoolArg();
-	control.switchActiveEnable(fw, bw);
+	control.switchActiveEnable(target_motor, fw, bw);
 	onSuccess();
 }
 

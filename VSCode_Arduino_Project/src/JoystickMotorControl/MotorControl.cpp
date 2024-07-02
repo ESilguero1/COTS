@@ -549,7 +549,7 @@ void MotorControl :: buttonStatus() {
 
 bool MotorControl::_checkBit(datagram * dg, int targetBit) {
 
-    if (dg->data & (0x80000000 >> 31-targetBit)) {
+    if (dg->data & (0x80000000 >> (31-targetBit))) {
         return true;
     }
 
@@ -867,7 +867,7 @@ bool MotorControl :: goPos(unsigned long position) {
 		MotorControl :: setRampMode(ADDRESS_MODE_POSITION);
 	}
 
-	MotorControl :: setVelocity(STANDVELOCITY / _resolutionNum);
+	MotorControl :: setVelocity(STAND_MTR_VELOCITY / _resolutionNum);
  	MotorControl :: setXtarget(position);
  	
  	return true;
@@ -943,7 +943,7 @@ bool MotorControl :: setHome() {
 		
 		case(3): {
 
-			MotorControl :: constForward(STANDVELOCITY / _resolutionNum);
+			MotorControl :: constForward(STAND_MTR_VELOCITY / _resolutionNum);
 
 			while(forwardSwitch == false) {
 				MotorControl :: buttonStatus();

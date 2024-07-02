@@ -55,12 +55,12 @@ void Joystick :: begin() {
 }
 
 double Joystick :: xAxisControl() {
-	double xVal = Joystick :: _readAxis(XAXIS, _xthreshold);
+	double xVal = Joystick :: _readAxis(JS_XAXIS_INPUT, _xthreshold);
 	return xVal;
 }
 
 double Joystick :: yAxisControl() {
-	double yVal = Joystick :: _readAxis(YAXIS, _ythreshold);
+	double yVal = Joystick :: _readAxis(JS_YAXIS_INPUT, _ythreshold);
 	return yVal;
 }
 

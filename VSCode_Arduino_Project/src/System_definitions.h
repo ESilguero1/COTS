@@ -9,27 +9,28 @@
  
  
 // Define Pins (Set for Ardunio Mega2560)
-#define STOP  13
-#define CLOCKPIN   11
-#define ENABLEPIN 6
- 
+#define JS_STOP_SWTICH  13
+
+#define MTR_ENA_0 5
+#define MTR_ENA_1 6
+
+#define MTR_CS0 10 
+#define MTR_CS1 11 
+
 #define MISOPIN  50 // UNUSED. noted for reference only. Due uses SPI header
 #define MOSIPIN  51 // UNUSED. noted for reference only. Due uses SPI header
 #define SCKPIN 52 // UNUSED. noted for reference only. Due uses SPI header
  
-//SPI1 DEVICE PIN definition. IMPORTNAT Due have only 3 SS pins to choose from. 4, 10 and 52.
-#define CSPIN 11
  
-#define XAXIS A0
-#define YAXIS A1
-#define SENSOR1PIN A2
+#define JS_XAXIS_INPUT A1
+#define JS_YAXIS_INPUT A0
 #define ADC_RESOLUTION_FLOAT 1024.0
 
 
 // Additional constants
-#define STANDVELOCITY 	100000
-#define STATUS_SIZE		25
-#define MOTOR_STEPS		200
+#define STAND_MTR_VELOCITY 	100000
+#define MTR_STATUS_SIZE		25
+#define MOTOR_STEPS		    200 //Motor (1.8) 360/1.8
 
 // Define Registers for TMC5130
 #define ADDRESS_GCONF      	0x00

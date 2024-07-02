@@ -14,24 +14,31 @@ void CombinedControl :: begin() {
 
 	// byte csPin, byte enablePin, int ID. The empty constructor cannot take the pins and so
 	//they must be set after construction by the MotorControl :: set function.
-	motor.set(CSPIN, ENABLEPIN, 1);
+	motor[0].set(MTR_CS0, MTR_ENA_0, 0); 
+ 	motor[1].set(MTR_CS1, MTR_ENA_1, 1); 
+ 
 	// double yrange, double ythreshold, int ypin, double xrange, double xthreshold, int xpin
-	joystick.set(200000.0, 0.005 * 200000.0, YAXIS, 1, 0.005 * 1, XAXIS); 
+	joystick.set(200000.0, 0.005 * 200000.0, JS_YAXIS_INPUT, 1, 0.005 * 1, JS_XAXIS_INPUT);
 
 	_seekStep = 0;
 	_stepResolution = 256;
-	_lastVel = 0;
-	_lastRead = 0;
+  	_lastX_Y_vel[0] = 0;
+  	_lastX_Y_vel[1] = 0;
 	_resolutionNum = 1;
 
 	// Initializing the motor objects and start it at home position
 	joystick.begin();
-	motor.begin();
+	motor[0].begin();
+  	motor[1].begin();
 
 	// Print out motor data to confirm proper results
-	Serial.print(motor.getMotorID());
+	Serial.print(motor[0].getMotorID());
 	Serial.print(F(" : Motor Data: "));
-	motor.getMotorData();
+	motor[0].getMotorData();
+	
+ 	Serial.print(motor[1].getMotorID());
+	Serial.print(F(" : Motor Data: "));
+	motor[1].getMotorData();
 	Serial.flush();
 }
 
@@ -45,7 +52,7 @@ void CombinedControl :: begin() {
  ====================================================================== */
 
 void CombinedControl :: disableJoystick() {
-	motor.stop();
+	motor[0].stop();
 }
 
 /* ======================================================================
@@ -57,29 +64,39 @@ void CombinedControl :: disableJoystick() {
 
 void CombinedControl :: enableJoystick() {
 
-	if (CombinedControl :: _timer(_lastRead)) {
+	if (CombinedControl :: _timer(_lastRead)) 
+	{
 		_lastRead = millis();
+		double X_Y_AxisVel[2];
 
-		double velocity = joystick.yAxisControl();
+		X_Y_AxisVel[0] = joystick.xAxisControl();
+		X_Y_AxisVel[1] = joystick.yAxisControl();
 
 		#ifdef MOTOR_DEBUG
-			Serial.print("velocity: ");
-			Serial.println(velocity);
+			Serial.print("X_AxisVel: ");
+			Serial.println(X_Y_AxisVel[0]);
+			Serial.print("X_AxisVel: ");
+			Serial.println(X_Y_AxisVel[1]);
 		#endif
-
-		// check the direction of the velocity and past velocity
-		if ( (_lastVel >= 0) ^ (velocity < 0) ) {
-			// if it exceeds a certain range, update the driving
-			if( (abs(velocity) > abs(_lastVel) * 1.10) || (abs(velocity) < abs(_lastVel) * 0.90) ) {
-				_lastVel = velocity;
-				CombinedControl :: _setJS(velocity);
+		for (uint8_t axis = 0; axis < 2; axis++)
+		{
+			// check the direction of the velocity and past velocity
+			if ( (_lastX_Y_vel[axis] >= 0) ^ (X_Y_AxisVel[axis] < 0) ) 
+			{
+				// if it exceeds a certain range, update the driving
+				if( (abs(X_Y_AxisVel[axis]) > abs(_lastX_Y_vel[axis]) * 1.10) || (abs(X_Y_AxisVel[axis]) < abs(_lastX_Y_vel[axis]) * 0.90) ) 
+				{
+					_lastX_Y_vel[axis] = X_Y_AxisVel[axis];
+					CombinedControl :: _setJS(axis, X_Y_AxisVel[axis]);
+				}
 			}
-		}
 
-		// always update motor if velocity and last velocity are in different directions
-		else {
-			_lastVel = velocity;
-			CombinedControl :: _setJS(velocity);
+			// always update motor if velocity and last velocity are in different directions
+			else 
+			{
+				_lastX_Y_vel[axis] = X_Y_AxisVel[axis];
+				CombinedControl :: _setJS(axis, X_Y_AxisVel[axis]);
+			}
 		}
 	}
 }
@@ -88,14 +105,14 @@ void CombinedControl :: enableJoystick() {
  	Sets the direction and speed of the motor as read from the joystick.
 ====================================================================== */
 
-void CombinedControl :: _setJS(double velocity) {
+void CombinedControl :: _setJS(uint8_t motor_id, double velocity) {
 
 	if ( velocity < 0 ) {
-		motor.constReverse(abs(velocity));
+		motor[motor_id].constReverse(abs(velocity));
 	}
 
 	else {
-		motor.constForward(velocity);
+		motor[motor_id].constForward(velocity);
 	}
 }
 
@@ -123,7 +140,7 @@ bool CombinedControl :: _timer(unsigned long lastReadTime) {
  ====================================================================== */
 
 void CombinedControl :: goPos(uint8_t motor_id, unsigned long position) {
-	motor.goPos(position);
+	motor[motor_id].goPos(position);
 }
 
 /* ======================================================================
@@ -135,7 +152,7 @@ void CombinedControl :: goPos(uint8_t motor_id, unsigned long position) {
 void CombinedControl :: setHome(uint8_t motor_id) {
 	bool setHome = false;
 	while (!setHome) {
-		setHome = motor.setHome();
+		setHome = motor[motor_id].setHome();
 	}
 }
 
@@ -146,7 +163,7 @@ void CombinedControl :: setHome(uint8_t motor_id) {
  ====================================================================== */
 
 void CombinedControl :: forward(uint8_t motor_id, unsigned long stepsForward, unsigned long velocity) {
-	motor.forward(stepsForward, velocity);
+	motor[motor_id].forward(stepsForward, velocity);
 }
 
 /* ======================================================================
@@ -156,7 +173,7 @@ void CombinedControl :: forward(uint8_t motor_id, unsigned long stepsForward, un
  ====================================================================== */
 
 void CombinedControl :: reverse(uint8_t motor_id, unsigned long stepsBackward, unsigned long velocity) {
-	motor.reverse(stepsBackward, velocity);
+	motor[motor_id].reverse(stepsBackward, velocity);
 }
 
 /* ======================================================================
@@ -165,7 +182,7 @@ void CombinedControl :: reverse(uint8_t motor_id, unsigned long stepsBackward, u
  ====================================================================== */
 
 void CombinedControl :: constForward(uint8_t motor_id, unsigned long velocity) {
-	motor.constForward(velocity);
+	motor[motor_id].constForward(velocity);
 }
 
 /* ======================================================================
@@ -174,7 +191,7 @@ void CombinedControl :: constForward(uint8_t motor_id, unsigned long velocity) {
  ====================================================================== */
 
 void CombinedControl :: constReverse(uint8_t motor_id, unsigned long velocity) {
-	motor.constReverse(velocity);
+	motor[motor_id].constReverse(velocity);
 }
 
 /* ======================================================================
@@ -183,12 +200,12 @@ void CombinedControl :: constReverse(uint8_t motor_id, unsigned long velocity) {
  ====================================================================== */
 
 void CombinedControl :: stop(uint8_t motor_id) {
-	motor.stop();
+	motor[motor_id].stop();
 }
 
 /* ======================================================================
 	Seeks a stop event such that a button on the left or right is pressed
-	to indicate the stopping of the motor.
+	to indicate the stopping of the motor[motorID].
  ====================================================================== */
 
 bool CombinedControl :: seek(uint8_t motor_id, bool goForward) {
@@ -200,34 +217,34 @@ bool CombinedControl :: seek(uint8_t motor_id, bool goForward) {
 		// Set the direction of seeking
 		case(0): {
 			if (goForward == true) {
-				motor.constForward(STANDVELOCITY / _resolutionNum);
+				motor[motor_id].constForward(STAND_MTR_VELOCITY / _resolutionNum);
 				_seekStep = 1;
 			}
 			else {
-				motor.constReverse(STANDVELOCITY / _resolutionNum);
+				motor[motor_id].constReverse(STAND_MTR_VELOCITY / _resolutionNum);
 				_seekStep = 2;
 			}
 		} break;
 
 		// check if right button (goForward = true) is pressed
 		case(1): {
-			motor.buttonStatus();
-			if (motor.forwardSwitch == true) {
+			motor[motor_id].buttonStatus();
+			if (motor[motor_id].forwardSwitch == true) {
 				_seekStep = 3;
 			}
 		} break;
 
 		// check if left button (goForward = false) is pressed
 		case(2): {
-			motor.buttonStatus();
-			if (motor.backwardSwitch == true) {
+			motor[motor_id].buttonStatus();
+			if (motor[motor_id].backwardSwitch == true) {
 				_seekStep = 3;
 			}
 		} break;
 
 		// stop the motor and finish seeking
 		default: {
-			motor.stop();
+			motor[motor_id].stop();
 			_seekStep = 0;
 			done = true;
 		}
@@ -244,41 +261,41 @@ bool CombinedControl :: seek(uint8_t motor_id, bool goForward) {
 	array of 1's and 0's.
  ====================================================================== */
 
-void CombinedControl :: status(int * statusBits) {
+void CombinedControl :: status(uint8_t motor_id, int * statusBits) {
 
-	motor.readStatus();
+	motor[motor_id].readStatus();
 
-	statusBits[0] = motor.status_sg2;
-	statusBits[1] = motor.status_sg2_event;
-	statusBits[2] = motor.status_standstill;
+	statusBits[0] = motor[motor_id].status_sg2;
+	statusBits[1] = motor[motor_id].status_sg2_event;
+	statusBits[2] = motor[motor_id].status_standstill;
 
-	statusBits[3] = motor.status_velocity_reached;
-	statusBits[4] = motor.status_position_reached;
-	statusBits[5] = motor.status_position_reached_event;
+	statusBits[3] = motor[motor_id].status_velocity_reached;
+	statusBits[4] = motor[motor_id].status_position_reached;
+	statusBits[5] = motor[motor_id].status_position_reached_event;
 
-	statusBits[6] = motor.status_stop_l;
-	statusBits[7] = motor.status_stop_r;
-	statusBits[8] = motor.status_stop_l_event;
-	statusBits[9] = motor.status_stop_r_event;
-	statusBits[10] = motor.status_latch_l;
-	statusBits[11] = motor.status_latch_r;
+	statusBits[6] = motor[motor_id].status_stop_l;
+	statusBits[7] = motor[motor_id].status_stop_r;
+	statusBits[8] = motor[motor_id].status_stop_l_event;
+	statusBits[9] = motor[motor_id].status_stop_r_event;
+	statusBits[10] = motor[motor_id].status_latch_l;
+	statusBits[11] = motor[motor_id].status_latch_r;
 
-	statusBits[12] = motor.status_openLoad_A;
-	statusBits[13] = motor.status_openLoad_B;
-	statusBits[14] = motor.status_shortToGround_A;
-	statusBits[15] = motor.status_shortToGround_B;
+	statusBits[12] = motor[motor_id].status_openLoad_A;
+	statusBits[13] = motor[motor_id].status_openLoad_B;
+	statusBits[14] = motor[motor_id].status_shortToGround_A;
+	statusBits[15] = motor[motor_id].status_shortToGround_B;
 
-	statusBits[16] = motor.status_overtemperatureWarning;
-	statusBits[17] = motor.status_overtemperatureShutdown;
+	statusBits[16] = motor[motor_id].status_overtemperatureWarning;
+	statusBits[17] = motor[motor_id].status_overtemperatureShutdown;
 
-	statusBits[18] = motor.status_isReverse;
-	statusBits[19] = motor.status_resetDetected;
-	statusBits[20] = motor.status_driverError;
-	statusBits[21] = motor.status_underVoltage;
+	statusBits[18] = motor[motor_id].status_isReverse;
+	statusBits[19] = motor[motor_id].status_resetDetected;
+	statusBits[20] = motor[motor_id].status_driverError;
+	statusBits[21] = motor[motor_id].status_underVoltage;
 
-	statusBits[22] = motor.getIsForward();
-	statusBits[23] = motor.getIsPositionMode();
-	statusBits[24] = motor.getIsHomed();
+	statusBits[22] = motor[motor_id].getIsForward();
+	statusBits[23] = motor[motor_id].getIsPositionMode();
+	statusBits[24] = motor[motor_id].getIsHomed();
 }
 
 /* ======================================================================
@@ -286,25 +303,25 @@ void CombinedControl :: status(int * statusBits) {
 	stall guard bits and sends it back as an integer array of 1's and 0's.
  ====================================================================== */
 
-unsigned long  CombinedControl :: sgStatus() {
-	motor.sgStatus();
-	return motor.sgStatusBits;
+unsigned long  CombinedControl :: sgStatus(uint8_t motor_id) {
+	motor[motor_id].sgStatus();
+	return motor[motor_id].sgStatusBits;
 }
 
 /* ======================================================================
 	Checks and confirms if the motor comes to a standstill
  ====================================================================== */
 
-bool CombinedControl :: standstill() {
-	return motor.status_standstill;
+bool CombinedControl :: standstill(uint8_t motor_id) {
+	return motor[motor_id].status_standstill;
 }
 
 /* ======================================================================
-	Returns the actual position of the motor.
+	Returns the actual position of the motor[motor_id].
  ====================================================================== */
 
-double CombinedControl :: getXactual() {
-	double xPos = motor.getXactual();
+double CombinedControl :: getXactual(uint8_t motor_id) {
+	double xPos = motor[motor_id].getXactual();
 	if (xPos > 2147483648.0) {
 		Serial.println(xPos);
 		xPos -= 4294967296.0;
@@ -317,8 +334,8 @@ double CombinedControl :: getXactual() {
 	Gets the maximum velocity to the given value
  ====================================================================== */
 
-unsigned long CombinedControl :: getVelocity() {
-	return motor.getVelocity();
+unsigned long CombinedControl :: getVelocity(uint8_t motor_id) {
+	return motor[motor_id].getVelocity();
 }
 
 /* ======================================================================
@@ -326,8 +343,8 @@ unsigned long CombinedControl :: getVelocity() {
 	to the given value.
  ====================================================================== */
 
-unsigned long CombinedControl :: getAcceleration() {
-	return motor.getAcceleration();
+unsigned long CombinedControl :: getAcceleration(uint8_t motor_id) {
+	return motor[motor_id].getAcceleration();
 }
 
 /* ======================================================================
@@ -335,8 +352,8 @@ unsigned long CombinedControl :: getAcceleration() {
 	to the given value.
  ====================================================================== */
 
-unsigned long CombinedControl :: getDeceleration() {
-	return motor.getDeceleration();
+unsigned long CombinedControl :: getDeceleration(uint8_t motor_id) {
+	return motor[motor_id].getDeceleration();
 }
 
 /* ======================================================================
@@ -344,8 +361,8 @@ unsigned long CombinedControl :: getDeceleration() {
 	to the given value.
  ====================================================================== */
 
-unsigned long CombinedControl :: getPower() {
-	return motor.getPowerLevel();
+unsigned long CombinedControl :: getPower(uint8_t motor_id) {
+	return motor[motor_id].getPowerLevel();
 }
 
 //====================================================================================
@@ -356,8 +373,8 @@ unsigned long CombinedControl :: getPower() {
 	Changes the maximum velocity to the given value
  ====================================================================== */
 
-void CombinedControl :: setVelocity(unsigned long velocity) {
-	motor.setVelocity(velocity);
+void CombinedControl :: setVelocity(uint8_t motor_id, unsigned long velocity) {
+	motor[motor_id].setVelocity(velocity);
 }
 
 /* ======================================================================
@@ -365,8 +382,8 @@ void CombinedControl :: setVelocity(unsigned long velocity) {
 	to the given value.
  ====================================================================== */
 
-void CombinedControl :: setAcceleration(unsigned long acceleration) {
-	motor.setAcceleration(acceleration);
+void CombinedControl :: setAcceleration(uint8_t motor_id, unsigned long acceleration) {
+	motor[motor_id].setAcceleration(acceleration);
 }
 
 /* ======================================================================
@@ -374,8 +391,8 @@ void CombinedControl :: setAcceleration(unsigned long acceleration) {
 	to the given value.
  ====================================================================== */
 
-void CombinedControl :: setDeceleration(unsigned long deceleration) {
-	motor.setDeceleration(deceleration);
+void CombinedControl :: setDeceleration(uint8_t motor_id, unsigned long deceleration) {
+	motor[motor_id].setDeceleration(deceleration);
 }
 
 /* ======================================================================
@@ -383,8 +400,8 @@ void CombinedControl :: setDeceleration(unsigned long deceleration) {
 	to the given value.
  ====================================================================== */
 
-void CombinedControl :: setPower(unsigned long holdPower, unsigned long runPower) {
-	motor.setPowerLevel(holdPower, runPower);
+void CombinedControl :: setPower(uint8_t motor_id, unsigned long holdPower, unsigned long runPower) {
+	motor[motor_id].setPowerLevel(holdPower, runPower);
 }
 
 /* ======================================================================
@@ -393,18 +410,18 @@ void CombinedControl :: setPower(unsigned long holdPower, unsigned long runPower
 	to the given position.
  ====================================================================== */
 
-void CombinedControl :: setXtarget(unsigned long position) {
-	motor.setXtarget(position);
+void CombinedControl :: setXtarget(uint8_t motor_id, unsigned long position) {
+	motor[motor_id].setXtarget(position);
 }
 
 /* ======================================================================
-	Sets the CHOPCONF register to set the resolution of the motor. The
+	Sets the CHOPCONF register to set the resolution of the motor[motor_id]. The
 	default value is 256.
  ====================================================================== */
 
-void CombinedControl :: setResolution(int resolution) {
-	motor.setChopConf(resolution);
-	_resolutionNum = motor.getResolution();
+void CombinedControl :: setResolution(uint8_t motor_id, int resolution) {
+	motor[motor_id].setChopConf(resolution);
+	_resolutionNum = motor[motor_id].getResolution();
 }
 
 /* ======================================================================
@@ -412,13 +429,13 @@ void CombinedControl :: setResolution(int resolution) {
 	the current position to the specified position.
  ====================================================================== */
 
-void CombinedControl :: changePosNoMove(unsigned long position) {
-	motor.stop();
+void CombinedControl :: changePosNoMove(uint8_t motor_id, unsigned long position) {
+	motor[motor_id].stop();
 
-	motor.setRampMode(1);
+	motor[motor_id].setRampMode(1);
 
-	motor.setXactual(position);
-	motor.setXtarget(position);
+	motor[motor_id].setXactual(position);
+	motor[motor_id].setXtarget(position);
 }
 
 /* ======================================================================
@@ -432,8 +449,8 @@ void CombinedControl :: changePosNoMove(unsigned long position) {
 		4			left 		right 		ccw 		cw
 ====================================================================== */
 
-void CombinedControl :: setDirections(bool forwardDirection, bool forwardSwitch) {
-	motor.swapDirection(!forwardDirection, !forwardSwitch);
+void CombinedControl :: setDirections(uint8_t motor_id, bool forwardDirection, bool forwardSwitch) {
+	motor[motor_id].swapDirection(!forwardDirection, !forwardSwitch);
 }
 
 /* ======================================================================
@@ -441,13 +458,6 @@ void CombinedControl :: setDirections(bool forwardDirection, bool forwardSwitch)
 	(true) is active low and setting to 0 is active high.
 ====================================================================== */
 
-void CombinedControl :: switchActiveEnable(bool fw, bool bw) {
-	motor.switchActiveEnable(fw, bw);
+void CombinedControl :: switchActiveEnable(uint8_t motor_id, bool fw, bool bw) {
+	motor[motor_id].switchActiveEnable(fw, bw);
 }
-
-
-
-
-
-
-
