@@ -139,8 +139,32 @@ bool CombinedControl :: _timer(unsigned long lastReadTime) {
 	position '0' will send it back to the home state.
  ====================================================================== */
 
-void CombinedControl :: goPos(uint8_t motor_id, unsigned long position) {
-	motor[motor_id].goPos(position);
+void CombinedControl :: goPos(uint8_t motor_id, unsigned long position) 
+{
+	{
+		if (motor_id == 0)
+		{	
+			if ((position < -4582400) || (position >= 4608000) ) //Limit range between -179 and 180 degrees
+			{
+			Serial.print("Bad Horsey!");
+			}
+			else 
+			{
+				motor[motor_id].goPos(position);
+			}
+		}
+		else // motor 1 
+		{	
+			if ((position < 0) || (position > 2304000) )
+			{
+			Serial.print("Bad Horsey!");
+			}
+			else 
+			{
+				motor[motor_id].goPos(position);
+			}
+		}
+	}
 }
 
 /* ======================================================================
