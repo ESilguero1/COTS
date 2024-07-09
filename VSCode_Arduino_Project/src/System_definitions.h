@@ -28,7 +28,7 @@
 
 
 // Additional constants
-#define STAND_MTR_VELOCITY 	100000
+#define STAND_MTR_VELOCITY 	50000//100000
 #define MTR_STATUS_SIZE		25
 #define MOTOR_STEPS		    200 //Motor (1.8) 360/1.8
 

@@ -39,7 +39,7 @@ class CombinedControl {
 
       //===== MOVE FUNCTIONS =====
 
-      void goPos(uint8_t motor_id, unsigned long position);                                  // brings the motor back to its home position
+      void goPos(uint8_t motor_id, signed long position);                                  // brings the motor back to its home position
       void setHome(uint8_t motor_id);                                                      // sets the home position using the right hand switch
       void forward(uint8_t motor_id, unsigned long stepsForward, unsigned long velocity);    // push forward at the specified velocity
       void reverse(uint8_t motor_id, unsigned long stepsBackward, unsigned long velocity);   // moves motor in reverse direction

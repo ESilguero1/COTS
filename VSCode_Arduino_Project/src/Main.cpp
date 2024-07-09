@@ -95,7 +95,7 @@ void setup() {
 void loop() {
 
 	// 20 us
-	cmdMessenger.feedinSerialData(); /* Process incoming messages */
+ 	cmdMessenger.feedinSerialData(); /* Process incoming messages */
 
 	// 100 us
 	if ( motorFlags[0].isJSEnable ) 
@@ -129,8 +129,8 @@ void attachCommandCallbacks() {
   cmdMessenger.attach(REQUEST_SG_STATUS,		onRequestStallStatus);		//Reply: g,
   cmdMessenger.attach(REQUEST_POS_NO_MOVE,		onRequestSetPosNoMove);		//Reply: d,
  
-  cmdMessenger.attach(GET_ADCBITS,              onGetADCBits);          	//Reply: A,
-  cmdMessenger.attach(GET_ADCREFVOLT,           onGetADCRefVolt);       	//Reply: V,
+  //cmdMessenger.attach(GET_ADCBITS,              onGetADCBits);          	//Reply: A,
+  //cmdMessenger.attach(GET_ADCREFVOLT,           onGetADCRefVolt);       	//Reply: V,
   cmdMessenger.attach(GET_XACTUAL, 				onGetXactual);				//Reply: x,
   cmdMessenger.attach(GET_VELOCITY,				onGetVelocity);				//Reply: v,
   cmdMessenger.attach(GET_ACCELERATION, 		onGetAcceleration);			//Reply: a,
@@ -231,7 +231,7 @@ void OnUnknownCommand() {
 // Format : outputStr = "m,time,bit0,bit1,...,bit24;"
 void onRequestMotorStatus() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	outputStr.remove(0);
 	outputStr.concat(F("m,"));
 	outputStr.concat(millis());
@@ -250,7 +250,7 @@ void onRequestMotorStatus()
 // Format : outputStr = "g,time,status;"
 void onRequestStallStatus() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	outputStr.remove(0);
 	outputStr.concat(F("g,"));
 	outputStr.concat(millis());
@@ -265,7 +265,7 @@ void onRequestStallStatus()
 // Format : outputStr = "m,time,oldpos,newpos;"
 void onRequestSetPosNoMove() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	outputStr.remove(0);
 	outputStr.concat(F("d,"));
 	outputStr.concat(millis());
@@ -303,7 +303,7 @@ void onGetADCRefVolt()
 // Format : outputStr = "x,time,xposition;" (Note that it is a 200 stepper motor)
 void onGetXactual() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	outputStr.remove(0);
   	outputStr.concat(F("x,"));
   	outputStr.concat(millis());
@@ -318,7 +318,7 @@ void onGetXactual()
 // Format : outputStr = "v,time,velocity;"
 void onGetVelocity() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	outputStr.remove(0);
   	outputStr.concat(F("v,"));
   	outputStr.concat(millis());
@@ -333,7 +333,7 @@ void onGetVelocity()
 // Format : outputStr = "a,time,acceleration;"
 void onGetAcceleration() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	outputStr.remove(0);
   	outputStr.concat(F("a,"));
   	outputStr.concat(millis());
@@ -348,7 +348,7 @@ void onGetAcceleration()
 // Format : outputStr = "d,time,deceleration;"
 void onGetDeceleration() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	outputStr.remove(0);
   	outputStr.concat(F("d,"));
   	outputStr.concat(millis());
@@ -363,7 +363,7 @@ void onGetDeceleration()
 // Format : outputStr = "P,time,power;"
 void onGetPower() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	outputStr.remove(0);
   	outputStr.concat(F("P,"));
   	outputStr.concat(millis());
@@ -378,7 +378,7 @@ void onGetPower()
 // Format : not changes to outputStr
 void onConstantForward() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	if ( _checkFlags(target_motor) ) {
 		double velocity = cmdMessenger.readDoubleArg();
 		if (velocity == 0) {
@@ -401,7 +401,7 @@ void onConstantForward()
 // Format : not changes to outputStr
 void onConstantBackward() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	if ( _checkFlags(target_motor) ) 
 	{
 		double velocity = cmdMessenger.readDoubleArg();
@@ -419,13 +419,13 @@ void onConstantBackward()
 	}
 	else {
 		onFail();
-	}
+	} 
 }
 
 // Format : not changes to outputStr
 void onMovePosition() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	_checkJS(target_motor);
 	if ( !motorFlags[target_motor].isSeeking ) {
 		double pos = cmdMessenger.readDoubleArg();
@@ -444,7 +444,7 @@ void onMovePosition()
 // Format : not changes to outputStr
 void onMoveForward() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	_checkJS(target_motor);
 	if ( !motorFlags[target_motor].isSeeking ) {
 		double stepsForward = cmdMessenger.readDoubleArg();
@@ -500,7 +500,7 @@ void onMoveBackward()
 // Format : not changes to outputStr
 void onVelocity() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	double velocity = cmdMessenger.readDoubleArg();
 
 	if (velocity == 0) {
@@ -515,7 +515,7 @@ void onVelocity()
 // Format : not changes to outputStr
 void onAcceleration()
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	double acceleration = cmdMessenger.readDoubleArg();
 
 	if(acceleration == 0) {
@@ -530,7 +530,7 @@ void onAcceleration()
 // Format : not changes to outputStr
 void onDeceleration() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	double deceleration = cmdMessenger.readDoubleArg();
 
 	if(deceleration == 0) {
@@ -545,7 +545,7 @@ void onDeceleration()
 // Format : not changes to outputStr
 void onPower() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	double holdPower = cmdMessenger.readDoubleArg();
 	double runPower = cmdMessenger.readDoubleArg();
 
@@ -561,7 +561,7 @@ void onPower()
 // Format : not changes to outputStr
 void onDirection() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	double direction = cmdMessenger.readDoubleArg();
 
 	switch((int)direction) {
@@ -604,7 +604,7 @@ void onJSDisable()
 // Format : not changes to outputStr
 void onMotorStop() 
 {
-  uint8_t target_motor = cmdMessenger.readCharArg();
+  uint8_t target_motor = cmdMessenger.readInt16Arg();
 
   Serial.print("TargetMotor: ");
   Serial.println(target_motor);
@@ -618,7 +618,7 @@ void onMotorStop()
 // Format : not changes to outputStr
 void onMotorHome() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	if ( _checkFlags(target_motor) )
 	 {
 		control.setHome(target_motor);
@@ -632,7 +632,7 @@ void onMotorHome()
 // Format : not changes to outputStr
 void onSeek() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	_checkJS(target_motor);
 	if (motorFlags[target_motor].isPositioning) {
 		onFail();
@@ -647,7 +647,7 @@ void onSeek()
 // Format : not changes to outputStr
 void onResolution() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	int resolution = cmdMessenger.readInt16Arg();
 	Serial.println(resolution);
 	control.setResolution(target_motor, resolution);
@@ -665,7 +665,7 @@ void onResolution()
 // Format : not changes to outputStr
 void onActiveSettings() 
 {
-	uint8_t target_motor = cmdMessenger.readCharArg();
+	uint8_t target_motor = cmdMessenger.readInt16Arg();
 	bool fw = cmdMessenger.readBoolArg();
 	bool bw = cmdMessenger.readBoolArg();
 	control.switchActiveEnable(target_motor, fw, bw);

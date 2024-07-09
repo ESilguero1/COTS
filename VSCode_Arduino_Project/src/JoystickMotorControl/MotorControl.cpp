@@ -46,7 +46,7 @@ MotorControl :: MotorControl() {
 	 
 	IHOLD_IRUN.rw= WRITE;
 	IHOLD_IRUN.address = ADDRESS_IHOLD_IRUN;
-	IHOLD_IRUN.data= 0x00070603;   //IHOLD_IRUN: IHOLD=3, IRUN=10 (max.current), IHOLDDELAY=6
+	IHOLD_IRUN.data= 0x00070614;   //IHOLD_IRUN: IHOLD=3, IRUN=10 (max.current), IHOLDDELAY=7
 	 
 	TPOWERDOWN.rw  = WRITE;
 	TPOWERDOWN.address= ADDRESS_TZEROWAIT;
@@ -70,7 +70,7 @@ MotorControl :: MotorControl() {
 	 
 	VMAX.rw = WRITE;
 	VMAX.address  = ADDRESS_VMAX;
-	VMAX.data = 200000; // VMAX 
+	VMAX.data = STAND_MTR_VELOCITY; // VMAX 
 	 
 	DMAX.rw = WRITE;
 	DMAX.address  = ADDRESS_DMAX;

@@ -69,8 +69,8 @@ void CombinedControl :: enableJoystick() {
 		_lastRead = millis();
 		double X_Y_AxisVel[2];
 
-		X_Y_AxisVel[0] = joystick.xAxisControl();
-		X_Y_AxisVel[1] = joystick.yAxisControl();
+		X_Y_AxisVel[0] = joystick.xAxisControl()/4.0;// MS: Temporarily slowed down joystick to eliminate backlash
+		X_Y_AxisVel[1] = joystick.yAxisControl()/4.0;
 
 		#ifdef MOTOR_DEBUG
 			Serial.print("X_AxisVel: ");
@@ -139,7 +139,7 @@ bool CombinedControl :: _timer(unsigned long lastReadTime) {
 	position '0' will send it back to the home state.
  ====================================================================== */
 
-void CombinedControl :: goPos(uint8_t motor_id, unsigned long position) 
+void CombinedControl :: goPos(uint8_t motor_id, signed long position) 
 {
 	{
 		if (motor_id == 0)
