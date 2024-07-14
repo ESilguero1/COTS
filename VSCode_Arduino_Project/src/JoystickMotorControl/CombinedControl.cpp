@@ -1,5 +1,6 @@
 #include "CombinedControl.h"
 
+double fast_slow_multiplier[2] = {8.0, 1.0};
 
 /* ======================================================================
 	Initializes the control object to control both the motor and the
@@ -18,13 +19,15 @@ void CombinedControl :: begin() {
  	motor[1].set(MTR_CS1, MTR_ENA_1, 1); 
  
 	// double yrange, double ythreshold, int ypin, double xrange, double xthreshold, int xpin
-	joystick.set(200000.0, 0.005 * 200000.0, JS_YAXIS_INPUT, 1, 0.005 * 1, JS_XAXIS_INPUT);
+	joystick.set(10000.0, 0.005 * 10000.0, JS_YAXIS_INPUT, 10000, 0.005 * 10000.0, JS_XAXIS_INPUT);
 
 	_seekStep = 0;
 	_stepResolution = 256;
   	_lastX_Y_vel[0] = 0;
   	_lastX_Y_vel[1] = 0;
 	_resolutionNum = 1;
+	_mirrorMode = 0;
+	_fast_slow = 1; 
 
 	// Initializing the motor objects and start it at home position
 	joystick.begin();
@@ -62,15 +65,28 @@ void CombinedControl :: disableJoystick() {
 	Left and right are not currently configured.
  ====================================================================== */
 
-void CombinedControl :: enableJoystick() {
+void CombinedControl :: enableJoystick() 
+{
+	
 
 	if (CombinedControl :: _timer(_lastRead)) 
 	{
 		_lastRead = millis();
 		double X_Y_AxisVel[2];
+		double temp;
+		static boolean X_Y_RampModeSet[2];
 
-		X_Y_AxisVel[0] = joystick.xAxisControl()/4.0;// MS: Temporarily slowed down joystick to eliminate backlash
-		X_Y_AxisVel[1] = joystick.yAxisControl()/4.0;
+		X_Y_AxisVel[0] = joystick.xAxisControl() * fast_slow_multiplier[_fast_slow];// MS: Temporarily slowed down joystick to eliminate backlash
+		X_Y_AxisVel[1] = joystick.yAxisControl() * fast_slow_multiplier[_fast_slow];;
+
+	
+		if (_mirrorMode == 1)
+		{
+			temp = X_Y_AxisVel[0];
+			X_Y_AxisVel[0] = X_Y_AxisVel[1] * (-1.0);
+			X_Y_AxisVel[1] = temp * -1.0;
+		}
+
 
 		#ifdef MOTOR_DEBUG
 			Serial.print("X_AxisVel: ");
@@ -88,16 +104,23 @@ void CombinedControl :: enableJoystick() {
 				{
 					_lastX_Y_vel[axis] = X_Y_AxisVel[axis];
 					CombinedControl :: _setJS(axis, X_Y_AxisVel[axis]);
+					X_Y_RampModeSet[axis] = false;
 				}
 			}
-
 			// always update motor if velocity and last velocity are in different directions
 			else 
 			{
 				_lastX_Y_vel[axis] = X_Y_AxisVel[axis];
 				CombinedControl :: _setJS(axis, X_Y_AxisVel[axis]);
+				X_Y_RampModeSet[axis] = false;
 			}
-		}
+
+			if ((X_Y_RampModeSet[axis] == false) && (X_Y_AxisVel[axis] == 0.0))
+			{
+				X_Y_RampModeSet[axis] = true;
+				motor[axis].setRampMode(ADDRESS_MODE_POSITION);
+			}
+}
 	}
 }
 
@@ -484,4 +507,22 @@ void CombinedControl :: setDirections(uint8_t motor_id, bool forwardDirection, b
 
 void CombinedControl :: switchActiveEnable(uint8_t motor_id, bool fw, bool bw) {
 	motor[motor_id].switchActiveEnable(fw, bw);
+}
+
+/* ======================================================================
+	Changes the velocity of joystick for faster movement
+ ====================================================================== */
+
+void CombinedControl :: SetFastSlowJoyStick(uint8_t fast_low ) 
+{
+      _fast_slow = fast_low;
+}
+
+/* ======================================================================
+	enables mirror mode
+ ====================================================================== */
+
+void CombinedControl :: SetMirrorMode(uint8_t mirror_mode ) 
+{
+      _mirrorMode = mirror_mode;
 }

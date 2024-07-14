@@ -129,8 +129,8 @@ void attachCommandCallbacks() {
   cmdMessenger.attach(REQUEST_SG_STATUS,		onRequestStallStatus);		//Reply: g,
   cmdMessenger.attach(REQUEST_POS_NO_MOVE,		onRequestSetPosNoMove);		//Reply: d,
  
-  //cmdMessenger.attach(GET_ADCBITS,              onGetADCBits);          	//Reply: A,
-  //cmdMessenger.attach(GET_ADCREFVOLT,           onGetADCRefVolt);       	//Reply: V,
+  cmdMessenger.attach(GET_ADCBITS,              onGetADCBits);          	//Reply: A,
+  cmdMessenger.attach(GET_ADCREFVOLT,           onGetADCRefVolt);       	//Reply: V,
   cmdMessenger.attach(GET_XACTUAL, 				onGetXactual);				//Reply: x,
   cmdMessenger.attach(GET_VELOCITY,				onGetVelocity);				//Reply: v,
   cmdMessenger.attach(GET_ACCELERATION, 		onGetAcceleration);			//Reply: a,
@@ -283,21 +283,15 @@ void onRequestSetPosNoMove()
 // Format : outputStr = "A,ADCBits;"
 void onGetADCBits() 
 {
-    outputStr.remove(0);
-    outputStr.concat(F("a,"));
-    //outputStr.concat(ADCResolution);
-    outputStr.concat(F(";"));
-    Serial.println(outputStr);
+	uint8_t fast_slow_config = cmdMessenger.readInt16Arg();
+    control.SetFastSlowJoyStick(fast_slow_config);
 }
 
 // Format : outputStr = "V,ADCVolts;"
 void onGetADCRefVolt() 
 {
-    outputStr.remove(0);
-    outputStr.concat(F("v,"));
-    //outputStr.concat(ADCRefVolt);
-    outputStr.concat(F(";"));
-    Serial.println(outputStr);
+	uint8_t mirror_mode_nfig = cmdMessenger.readInt16Arg();
+    control.SetMirrorMode(mirror_mode_nfig);
 }
 
 // Format : outputStr = "x,time,xposition;" (Note that it is a 200 stepper motor)
