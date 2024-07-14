@@ -1053,21 +1053,50 @@ void MotorControl :: reverse(unsigned long stepsBackward, unsigned long velocity
 	constant velocity
  ====================================================================== */
 
-void MotorControl :: constForward(unsigned long velocity) {
- 	
- 	// Check if the motor is in mode 1, if not, change
-	if (MotorControl :: getRampMode() != forwardDirection.address) {
-		MotorControl :: setRampMode(forwardDirection.address);
+void MotorControl ::constForward(unsigned long velocity)
+{
+	unsigned long currentPosition = 0;
+	boolean isRangeCheckOk = false;
+	// Check if the motor is in mode 1, if not, change
+	if (MotorControl ::getRampMode() != forwardDirection.address)
+	{
+		MotorControl ::setRampMode(forwardDirection.address);
+	}
+	currentPosition = MotorControl ::getXtarget();
+	if (MotorControl ::motorID == 0)
+	{
+		if ((currentPosition < -4582400) || (currentPosition >= 4608000)) // Limit range between -179 and 180 degrees
+		{
+			Serial.print("Motor 0 Range Check Failed.");
+		}
+		else
+		{
+			isRangeCheckOk = true;
+		}
+	}
+	else // motor 1
+	{
+		if ((currentPosition < 0) || (currentPosition > 2304000))
+		{
+			Serial.print("Motor 1 Range Check Failed.");
+		}
+		else
+		{
+			isRangeCheckOk = true;
+		}
+	}
+	// You must set velocity after ramp mode otherwise will go in the positive direction
+	if (isRangeCheckOk == true)
+	{
+		MotorControl ::setVelocity(velocity);
 	}
 
-	MotorControl :: setVelocity(velocity);
+#ifdef DEBUG_DIR
+	Serial.print("Ramp Mode: ");
+	Serial.println(MotorControl ::getRampMode());
+#endif
 
-	#ifdef DEBUG_DIR
-		Serial.print("Ramp Mode: ");
-		Serial.println(MotorControl :: getRampMode());
-	#endif
-
- 	//return true;
+	// return true;
 }
 
 /* ======================================================================
@@ -1075,23 +1104,52 @@ void MotorControl :: constForward(unsigned long velocity) {
 	constant velocity
  ====================================================================== */
 
-void MotorControl :: constReverse(unsigned long velocity) {
- 	
- 	// Check if the motor is in mode 2, if not, change
-	if (MotorControl :: getRampMode() != backwardDirection.address) {
-		MotorControl :: setRampMode(backwardDirection.address);
+void MotorControl ::constReverse(unsigned long velocity)
+{
+
+	unsigned long currentPosition = 0;
+	boolean isRangeCheckOk = false;
+	// Check if the motor is in mode 2, if not, change
+	if (MotorControl ::getRampMode() != backwardDirection.address)
+	{
+		MotorControl ::setRampMode(backwardDirection.address);
 	}
-
+	currentPosition = MotorControl ::getXtarget();
+	if (MotorControl ::motorID == 0)
+	{
+		if ((currentPosition < -4582400) || (currentPosition >= 4608000)) // Limit range between -179 and 180 degrees
+		{
+			Serial.print("Motor 0 Range Check Failed.");
+		}
+		else
+		{
+			isRangeCheckOk = true;
+		}
+	}
+	else // motor 1
+	{
+		if ((currentPosition < 0) || (currentPosition > 2304000))
+		{
+			Serial.print("Motor 1 Range Check Failed.");
+		}
+		else
+		{
+			isRangeCheckOk = true;
+		}
+	}
 	// You must set velocity after ramp mode otherwise will go in the positive direction
-	MotorControl :: setVelocity(velocity);
+	if (isRangeCheckOk == true)
+	{
+		MotorControl ::setVelocity(velocity);
+	}
+#ifdef DEBUG_DIR
+	Serial.print("Ramp Mode: ");
+	Serial.println(MotorControl ::getRampMode());
+#endif
 
-	#ifdef DEBUG_DIR
-		Serial.print("Ramp Mode: ");
-		Serial.println(MotorControl :: getRampMode());
-	#endif 
-
- 	//return true;
+	// return true;
 }
+
 
 
 /* ======================================================================
