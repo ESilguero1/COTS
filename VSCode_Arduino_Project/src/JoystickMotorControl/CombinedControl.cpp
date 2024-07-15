@@ -1,6 +1,6 @@
 #include "CombinedControl.h"
 
-double fast_slow_multiplier[2] = {1.0, 10.0};
+double fast_slow_multiplier[2] = {1.0, 8.0};
 
 /* ======================================================================
 	Initializes the control object to control both the motor and the

@@ -7,9 +7,12 @@
 #define DEBUG 1
 #define DEBUG_CO 1
 
+#define BLE_CHARS_SIZE 64
+
 // Build extra objects
 CmdMessenger cmdMessenger = CmdMessenger(Serial);
 String outputStr;
+String BLE_Str = "10,0;";
 CombinedControl control;
 flags motorFlags[2];
 
@@ -78,10 +81,26 @@ void setup()
 	control.begin();
 
 	outputStr.reserve(128);
+	BLE_Str.reserve(BLE_CHARS_SIZE);
 	cmdMessenger.printLfCr();
 	attachCommandCallbacks();
 
 	// control.goPos(Test_Motor, 512000);
+	String BLE_Str;
+
+	BLE_Str.concat(F("10,0;"));
+
+	for (uint8_t e = 0; e < BLE_CHARS_SIZE; e++)
+	{
+		int messageState = cmdMessenger.processLine(BLE_Str[e]);
+
+		// If waiting for acknowledge command
+		if (messageState == kEndOfMessage)
+		{
+			cmdMessenger.handleMessage();
+			break;
+		}
+	}
 }
 
 void loop()
