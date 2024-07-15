@@ -7,8 +7,8 @@ enum : uint8_t {
     REQUEST_SG_STATUS       = 11,
     REQUEST_POS_NO_MOVE     = 12,
     // 20-29 reserved for getting values
-    GET_ADCBITS             = 20,
-    GET_ADCREFVOLT          = 21,
+    SET_JS_SLOW_FAST             = 20,
+    SET_JS_MIRROR_MODE          = 21,
     GET_XACTUAL             = 22,
     GET_VELOCITY            = 23,
     GET_ACCELERATION        = 24,

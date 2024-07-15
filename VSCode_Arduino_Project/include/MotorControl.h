@@ -158,7 +158,7 @@ class MotorControl {
 		unsigned long getVelocity();
 		unsigned long getAcceleration();
 		unsigned long getDeceleration();
-		unsigned long getXtarget();
+		signed long getXtarget();
 		unsigned long getXactual();
 		unsigned long getHomeXtarget();
 		unsigned long getRampMode();

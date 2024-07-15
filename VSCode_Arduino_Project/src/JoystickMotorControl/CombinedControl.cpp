@@ -1,6 +1,6 @@
 #include "CombinedControl.h"
 
-double fast_slow_multiplier[2] = {8.0, 1.0};
+double fast_slow_multiplier[2] = {1.0, 10.0};
 
 /* ======================================================================
 	Initializes the control object to control both the motor and the
@@ -27,7 +27,7 @@ void CombinedControl :: begin() {
   	_lastX_Y_vel[1] = 0;
 	_resolutionNum = 1;
 	_mirrorMode = 0;
-	_fast_slow = 1; 
+	_slow_fast = 1; 
 
 	// Initializing the motor objects and start it at home position
 	joystick.begin();
@@ -73,18 +73,18 @@ void CombinedControl :: enableJoystick()
 	{
 		_lastRead = millis();
 		double X_Y_AxisVel[2];
-		double temp;
+		//double temp;
 		static boolean X_Y_RampModeSet[2];
 
-		X_Y_AxisVel[0] = joystick.xAxisControl() * fast_slow_multiplier[_fast_slow];// MS: Temporarily slowed down joystick to eliminate backlash
-		X_Y_AxisVel[1] = joystick.yAxisControl() * fast_slow_multiplier[_fast_slow];;
+		X_Y_AxisVel[0] = joystick.xAxisControl() * fast_slow_multiplier[_slow_fast];// MS: Temporarily slowed down joystick to eliminate backlash
+		X_Y_AxisVel[1] = joystick.yAxisControl() * fast_slow_multiplier[_slow_fast];;
 
 	
 		if (_mirrorMode == 1)
 		{
-			temp = X_Y_AxisVel[0];
-			X_Y_AxisVel[0] = X_Y_AxisVel[1] * (-1.0);
-			X_Y_AxisVel[1] = temp * -1.0;
+			//temp = X_Y_AxisVel[0];
+			//X_Y_AxisVel[0] = X_Y_AxisVel[1] * (-1.0);
+			X_Y_AxisVel[1] = X_Y_AxisVel[1] * (-1.0);
 		}
 
 
@@ -513,9 +513,9 @@ void CombinedControl :: switchActiveEnable(uint8_t motor_id, bool fw, bool bw) {
 	Changes the velocity of joystick for faster movement
  ====================================================================== */
 
-void CombinedControl :: SetFastSlowJoyStick(uint8_t fast_low ) 
+void CombinedControl :: SetSlowFastJoyStick(uint8_t slow_fast) 
 {
-      _fast_slow = fast_low;
+      _slow_fast = slow_fast;
 }
 
 /* ======================================================================

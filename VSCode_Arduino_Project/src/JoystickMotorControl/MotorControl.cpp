@@ -814,7 +814,7 @@ unsigned long MotorControl :: getDeceleration() {
 	return DMAX.data;
 }
 
-unsigned long MotorControl :: getXtarget() {
+signed long MotorControl :: getXtarget() {
 	return XTARGET.data;
 }
 
@@ -1055,14 +1055,14 @@ void MotorControl :: reverse(unsigned long stepsBackward, unsigned long velocity
 
 void MotorControl ::constForward(unsigned long velocity)
 {
-	unsigned long currentPosition = 0;
-	boolean isRangeCheckOk = false;
+	signed long currentPosition = 0;
+	boolean isRangeCheckOk = true;
 	// Check if the motor is in mode 1, if not, change
 	if (MotorControl ::getRampMode() != forwardDirection.address)
 	{
 		MotorControl ::setRampMode(forwardDirection.address);
 	}
-	currentPosition = MotorControl ::getXtarget();
+/* 	currentPosition = MotorControl ::getXactual();
 	if (MotorControl ::motorID == 0)
 	{
 		if ((currentPosition < -4582400) || (currentPosition >= 4608000)) // Limit range between -179 and 180 degrees
@@ -1084,11 +1084,15 @@ void MotorControl ::constForward(unsigned long velocity)
 		{
 			isRangeCheckOk = true;
 		}
-	}
+	} */
 	// You must set velocity after ramp mode otherwise will go in the positive direction
 	if (isRangeCheckOk == true)
 	{
 		MotorControl ::setVelocity(velocity);
+	}
+	else
+	{
+		MotorControl ::stop();
 	}
 
 #ifdef DEBUG_DIR
@@ -1107,14 +1111,14 @@ void MotorControl ::constForward(unsigned long velocity)
 void MotorControl ::constReverse(unsigned long velocity)
 {
 
-	unsigned long currentPosition = 0;
-	boolean isRangeCheckOk = false;
+	signed long currentPosition = 0;
+	boolean isRangeCheckOk = true;
 	// Check if the motor is in mode 2, if not, change
 	if (MotorControl ::getRampMode() != backwardDirection.address)
 	{
 		MotorControl ::setRampMode(backwardDirection.address);
 	}
-	currentPosition = MotorControl ::getXtarget();
+/* 	currentPosition = MotorControl ::getXactual();
 	if (MotorControl ::motorID == 0)
 	{
 		if ((currentPosition < -4582400) || (currentPosition >= 4608000)) // Limit range between -179 and 180 degrees
@@ -1136,11 +1140,15 @@ void MotorControl ::constReverse(unsigned long velocity)
 		{
 			isRangeCheckOk = true;
 		}
-	}
+	} */
 	// You must set velocity after ramp mode otherwise will go in the positive direction
 	if (isRangeCheckOk == true)
 	{
 		MotorControl ::setVelocity(velocity);
+	}
+	else
+	{
+		MotorControl ::stop();
 	}
 #ifdef DEBUG_DIR
 	Serial.print("Ramp Mode: ");

@@ -73,7 +73,7 @@ class CombinedControl {
       void changePosNoMove(uint8_t motor_id, unsigned long position);                        // changes the actual position value without moving
       void setDirections(uint8_t motor_id, bool forwardDirection, bool forwardSwitch);       // sets the dir of switches and which is the forward dir
       void switchActiveEnable(uint8_t motor_id, bool fw, bool bw);                           // allows the user to change switches active high or low
-      void SetFastSlowJoyStick(uint8_t fast_low );
+      void SetSlowFastJoyStick(uint8_t slow_fast);
       void SetMirrorMode(uint8_t mirror_mode ) ;
 
    private:
@@ -86,7 +86,7 @@ class CombinedControl {
       double _lastX_Y_vel[2];
       unsigned long _lastRead;
       bool _mirrorMode;
-      bool _fast_slow;
+      bool _slow_fast;
 
       void _setJS(uint8_t motor_id, double velocity);
       bool _timer(unsigned long lastReadTime);
