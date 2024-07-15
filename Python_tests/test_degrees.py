@@ -1,6 +1,6 @@
 import serial
 
-arduino = serial.Serial(port='/dev/cu.usbmodem14101',   baudrate=115200, timeout=.1)
+arduino = serial.Serial(port='COM3',   baudrate=115200, timeout=.1)
 
 def go_to(motor, degree):
     arduino.flushInput()

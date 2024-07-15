@@ -3,8 +3,9 @@ import json
 import serial
 import keyboard
 import time
+import threading
 
-arduino = serial.Serial(port='/dev/cu.usbmodem14101',   baudrate=115200, timeout=.1)
+arduino = serial.Serial(port='COM3', baudrate=115200, timeout=.1)
 
 def send_coords(alt, az):
     print(str(alt) + ", " + str(az))
@@ -14,36 +15,69 @@ def send_coords(alt, az):
         print("error")
     else:
         az = -az
-        print(str(alt) + ", " + str(az))
         y_ticks = int(alt * 25600)
         x_ticks = int(az * 25600)
         arduino.write(str.encode("32,1," + str(y_ticks) + ";"))
-        arduino.write(str.encode("32,0," +  str(x_ticks) + ";"))
+        arduino.write(str.encode("32,0," + str(x_ticks) + ";"))
 
 def go_home():
     arduino.write(str.encode("32,1,0;"))
     arduino.write(str.encode("32,0,0;"))
 
+def track_object(query):
+    while not keyboard.is_pressed('backspace'):
+        response = requests.get("http://localhost:8090/api/objects/info?name=" + query + "&format=json").json()
+        send_coords(response['altitude'], response['azimuth'])
+        for _ in range(60):
+            if keyboard.is_pressed('backspace'):
+                arduino.write(str.encode("42;"))
+                return
+            time.sleep(1)
+
+fast = False
+mirror = False
+arduino.flushInput()
+arduino.write(str.encode("20,0;"))
+arduino.write(str.encode("21,0;"))
+
 while True:
-    query = input("What object would you like to track?\n(or enter 'h' to recenter motors, \n'e' to exit, \n'f' to switch to fast mode, \n's' to switch to slow mode, \n'm' to enable mirror mode,  or  \n'n' to disable mirror mode)\n")
+    arduino.flushInput()
+    arduino.write(str.encode("40;"))
+    print("What object would you like to track?")
+    print("or enter 'h' to re-center motors,")
+    print("'e' to exit")
+    if not fast:
+        print("'f' to switch to fast mode")
+    else:
+        print("'s' to switch to slow mode")
+    if not mirror:
+        print("or 'm' to enable mirror mode")
+    else:
+        print("or 'n' to disable mirror mode")
+    query = input("")
+    print()
     first = True
     arduino.flushInput()
     if query == "h":
         print("Re-centering motors. Please wait...")
         go_home()
     elif query == "f":
+        fast = True
         print("Switching to fast mode...")
         arduino.write(str.encode("20,1;"))
         time.sleep(2)
-    elif query ==  "s":
+    elif query == "s":
+        fast = False
         print("Switching to slow mode...")
         arduino.write(str.encode("20,0;"))
         time.sleep(2)
     elif query == "m":
+        mirror = True
         print("Enabling mirror mode...")
         arduino.write(str.encode("21,1;"))
         time.sleep(2)
     elif query == "n":
+        mirror = False
         print("Disabling mirror mode...")
         arduino.write(str.encode("21,0;"))
         time.sleep(2)
@@ -51,15 +85,9 @@ while True:
         print("Exiting program.")
         break
     else:
+        arduino.write(str.encode("41;"))
         print("Tracking " + query + " (press backspace to stop tracking)...")
-        while True:
-            response = requests.get("http://localhost:8090/api/objects/info?name=" + query + "&format=json").json()
-            send_coords(response['altitude'], response['azimuth'])
-
-            if keyboard.is_pressed('backspace'):
-                arduino.write(str.encode("42;"))
-                break
-            if first:
-                time.sleep(120)
-                first = False
-            time.sleep(30)
+        tracking_thread = threading.Thread(target=track_object, args=(query,))
+        tracking_thread.start()
+        tracking_thread.join()
+    print()
