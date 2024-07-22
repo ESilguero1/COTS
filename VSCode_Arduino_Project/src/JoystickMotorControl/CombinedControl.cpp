@@ -1,6 +1,6 @@
 #include "CombinedControl.h"
 
-double fast_slow_multiplier[2] = {1.0, 8.0};
+double fast_slow_multiplier[2] = {1.0, 5.0};
 
 /* ======================================================================
 	Initializes the control object to control both the motor and the
@@ -27,7 +27,7 @@ void CombinedControl :: begin() {
   	_lastX_Y_vel[1] = 0;
 	_resolutionNum = 1;
 	_mirrorMode = 0;
-	_slow_fast = 1; 
+	_slow_fast = 0; 
 
 	// Initializing the motor objects and start it at home position
 	joystick.begin();
@@ -118,7 +118,8 @@ void CombinedControl :: enableJoystick()
 			if ((X_Y_RampModeSet[axis] == false) && (X_Y_AxisVel[axis] == 0.0))
 			{
 				X_Y_RampModeSet[axis] = true;
-				motor[axis].setRampMode(ADDRESS_MODE_POSITION);
+				//motor[axis].setRampMode(ADDRESS_MODE_POSITION);
+				//motor[axis].setVelocity(STAND_MTR_VELOCITY);
 			}
 }
 	}

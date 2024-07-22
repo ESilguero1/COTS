@@ -4,19 +4,35 @@
 #include "debugutils.h"
 #include "CombinedControl.h"
 
-#define DEBUG 1
-#define DEBUG_CO 1
+///BLE imports
+#include <Arduino.h>
+#include <SPI.h>
+#include "Adafruit_BLE.h"
+#include "Adafruit_BluefruitLE_SPI.h"
+#include "Adafruit_BluefruitLE_UART.h"
 
+#include "BluefruitConfig.h"
+//BLE #defines
+    #define FACTORYRESET_ENABLE         0
+    #define MINIMUM_FIRMWARE_VERSION    "0.6.6"
+    #define MODE_LED_BEHAVIOUR          "MODE"
+//BLE #defines
+
+//#define DEBUG 1
+//#define DEBUG_CO 1
 #define BLE_CHARS_SIZE 64
 
 // Build extra objects
 CmdMessenger cmdMessenger = CmdMessenger(Serial);
 String outputStr;
-String BLE_Str = "10,0;";
 CombinedControl control;
 flags motorFlags[2];
-
 int status[25];
+
+String BLE_Str;
+//BLE instatiation
+Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
+//BLE #instatiation
 
 void attachCommandCallbacks();
 void _checkJS(uint8_t motorID);
@@ -57,12 +73,20 @@ void setup()
 
 	// =============== Setup Motor Control ===============
 
-	// turn on general pins
+	// Configure Motor enable and Chip Select Pins
 	pinMode(MTR_CS0, OUTPUT);
 	pinMode(MTR_CS1, OUTPUT);
 	pinMode(MTR_ENA_0, OUTPUT);
 	pinMode(MTR_ENA_1, OUTPUT);
+
+	// Configure joystick stop switch
 	pinMode(JS_STOP_SWTICH, INPUT);
+
+
+	//Configure BLE pins
+	pinMode(BLUEFRUIT_SPI_CS, OUTPUT);
+	pinMode(BLUEFRUIT_SPI_RST, OUTPUT);
+	digitalWrite(BLUEFRUIT_SPI_RST, HIGH);
 
 	// initialize the SPI interface with TMC5130 settings
 	SPI.setBitOrder(MSBFIRST);
@@ -73,7 +97,7 @@ void setup()
 	// =============== Setup Board Configuration and Sensors ===============
 
 	Serial.begin(115200);
-	Serial.println("starting the coolest project ever");
+	Serial.println("starting the coolest project in the history of mankind");
 
 	// =============== Initialize Objects ===============
 
@@ -85,22 +109,55 @@ void setup()
 	cmdMessenger.printLfCr();
 	attachCommandCallbacks();
 
-	// control.goPos(Test_Motor, 512000);
-	String BLE_Str;
 
-	BLE_Str.concat(F("10,0;"));
 
-	for (uint8_t e = 0; e < BLE_CHARS_SIZE; e++)
+	/* Initialise the module */
+	Serial.print(F("Initialising the Bluefruit LE module: "));
+
+	if ( !ble.begin(VERBOSE_MODE) )
 	{
-		int messageState = cmdMessenger.processLine(BLE_Str[e]);
-
-		// If waiting for acknowledge command
-		if (messageState == kEndOfMessage)
-		{
-			cmdMessenger.handleMessage();
-			break;
-		}
+		Serial.print(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
 	}
+	else
+	{
+		Serial.println( F("BLE OK!") );
+		/* Disable command echo from Bluefruit */
+		ble.echo(false);
+
+		Serial.println("Requesting Bluefruit info:");
+		/* Print Bluefruit information */
+		ble.info();
+
+		Serial.println(F("Please use Adafruit Bluefruit LE app to connect in UART mode"));
+		Serial.println(F("Then Enter characters to send to Bluefruit"));
+		Serial.println();
+
+		ble.verbose(false);  // debug info is a little annoying after this point!
+		/* Wait for connection */
+		while (! ble.isConnected()) 
+		{
+			delay(200);
+			if (digitalRead(JS_STOP_SWTICH) == LOW)
+			{
+				break;
+			}
+		}
+
+		// LED Activity command is only supported from 0.6.6
+		if ( ble.isVersionAtLeast(MINIMUM_FIRMWARE_VERSION) )
+		{
+			// Change Mode LED Activity
+			Serial.println(F("Change LED activity to " MODE_LED_BEHAVIOUR));
+			ble.sendCommandCheckOK("AT+HWModeLED=" MODE_LED_BEHAVIOUR);
+		}
+
+		// Set module to DATA mode
+		Serial.println( F("Switching to DATA mode!") );
+		ble.setMode(BLUEFRUIT_MODE_DATA);
+
+		Serial.println("BLE INIT completed");
+	}
+	
 }
 
 void loop()
@@ -129,6 +186,30 @@ void loop()
 			motorFlags[motor].isPositioning = !control.standstill(motor);
 		}
 	}
+
+	// Process BLE received characters
+	if ( ble.available() )
+	{
+		char lastBLEcharReceived = (char)(ble.read());
+		BLE_Str.concat(lastBLEcharReceived);
+		if (lastBLEcharReceived == ';')
+		{
+
+			for (uint8_t e = 0; e < BLE_CHARS_SIZE; e++)
+			{
+				int messageState = cmdMessenger.processLine(BLE_Str[e]);
+
+				// If waiting for acknowledge command
+				if (messageState == kEndOfMessage)
+				{
+					cmdMessenger.handleMessage();
+					break;
+				}
+			}
+			BLE_Str.remove(0);
+		}
+	}
+
 }
 
 // =============== Command Callbacks ===============
@@ -173,6 +254,8 @@ void attachCommandCallbacks()
 // ADD IF SWITCHES ARE HIT DURING GO TO SPECIFIC POSITION, THEN STOP RATHER THAN CONTINUEING ON
 
 // =============== Additional Helper Functions ===============
+
+
 
 bool hasExpired(unsigned long &prevTime, unsigned long interval)
 {

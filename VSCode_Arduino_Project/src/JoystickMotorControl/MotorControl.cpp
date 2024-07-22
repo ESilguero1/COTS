@@ -1062,7 +1062,7 @@ void MotorControl ::constForward(unsigned long velocity)
 	{
 		MotorControl ::setRampMode(forwardDirection.address);
 	}
-/* 	currentPosition = MotorControl ::getXactual();
+ 	currentPosition = MotorControl ::getXactual();
 	if (MotorControl ::motorID == 0)
 	{
 		if ((currentPosition < -4582400) || (currentPosition >= 4608000)) // Limit range between -179 and 180 degrees
@@ -1084,7 +1084,7 @@ void MotorControl ::constForward(unsigned long velocity)
 		{
 			isRangeCheckOk = true;
 		}
-	} */
+	} 
 	// You must set velocity after ramp mode otherwise will go in the positive direction
 	if (isRangeCheckOk == true)
 	{
@@ -1118,7 +1118,7 @@ void MotorControl ::constReverse(unsigned long velocity)
 	{
 		MotorControl ::setRampMode(backwardDirection.address);
 	}
-/* 	currentPosition = MotorControl ::getXactual();
+ 	currentPosition = MotorControl ::getXactual();
 	if (MotorControl ::motorID == 0)
 	{
 		if ((currentPosition < -4582400) || (currentPosition >= 4608000)) // Limit range between -179 and 180 degrees
@@ -1140,7 +1140,7 @@ void MotorControl ::constReverse(unsigned long velocity)
 		{
 			isRangeCheckOk = true;
 		}
-	} */
+	} 
 	// You must set velocity after ramp mode otherwise will go in the positive direction
 	if (isRangeCheckOk == true)
 	{
