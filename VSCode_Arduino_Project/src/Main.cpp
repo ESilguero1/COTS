@@ -113,7 +113,7 @@ void setup()
 
 	/* Initialise the module */
 	Serial.print(F("Initialising the Bluefruit LE module: "));
-
+/* 
 	if ( !ble.begin(VERBOSE_MODE) )
 	{
 		Serial.print(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
@@ -121,11 +121,11 @@ void setup()
 	else
 	{
 		Serial.println( F("BLE OK!") );
-		/* Disable command echo from Bluefruit */
+		// Disable command echo from Bluefruit //
 		ble.echo(false);
 
 		Serial.println("Requesting Bluefruit info:");
-		/* Print Bluefruit information */
+		// Print Bluefruit information //
 		ble.info();
 
 		Serial.println(F("Please use Adafruit Bluefruit LE app to connect in UART mode"));
@@ -133,7 +133,7 @@ void setup()
 		Serial.println();
 
 		ble.verbose(false);  // debug info is a little annoying after this point!
-		/* Wait for connection */
+		// Wait for connection //
 		while (! ble.isConnected()) 
 		{
 			delay(200);
@@ -154,9 +154,10 @@ void setup()
 		// Set module to DATA mode
 		Serial.println( F("Switching to DATA mode!") );
 		ble.setMode(BLUEFRUIT_MODE_DATA);
-
+		ble.print("BLE INIT completed");
 		Serial.println("BLE INIT completed");
-	}
+	} 
+	*/
 	
 }
 

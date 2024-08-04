@@ -1067,7 +1067,7 @@ void MotorControl ::constForward(unsigned long velocity)
 	{
 		if ((currentPosition < -4582400) || (currentPosition >= 4608000)) // Limit range between -179 and 180 degrees
 		{
-			Serial.print("Motor 0 Range Check Failed.");
+			Serial.print(" JY Motor 0 Range Check Failed.");
 		}
 		else
 		{
@@ -1076,9 +1076,9 @@ void MotorControl ::constForward(unsigned long velocity)
 	}
 	else // motor 1
 	{
-		if ((currentPosition < 0) || (currentPosition > 2304000))
+		if ((currentPosition < -2304000) || (currentPosition > 2304000)) // Limit range betwee -90 and 90 degress
 		{
-			Serial.print("Motor 1 Range Check Failed.");
+			Serial.print(" JY Motor 1 Range Check Failed.");
 		}
 		else
 		{
@@ -1092,7 +1092,7 @@ void MotorControl ::constForward(unsigned long velocity)
 	}
 	else
 	{
-		MotorControl ::stop();
+		MotorControl ::setVelocity(0);
 	}
 
 #ifdef DEBUG_DIR

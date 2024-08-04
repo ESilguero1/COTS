@@ -73,7 +73,6 @@ void CombinedControl :: enableJoystick()
 	{
 		_lastRead = millis();
 		double X_Y_AxisVel[2];
-		//double temp;
 		static boolean X_Y_RampModeSet[2];
 
 		X_Y_AxisVel[0] = joystick.xAxisControl() * fast_slow_multiplier[_slow_fast];// MS: Temporarily slowed down joystick to eliminate backlash
@@ -82,8 +81,6 @@ void CombinedControl :: enableJoystick()
 	
 		if (_mirrorMode == 1)
 		{
-			//temp = X_Y_AxisVel[0];
-			//X_Y_AxisVel[0] = X_Y_AxisVel[1] * (-1.0);
 			X_Y_AxisVel[1] = X_Y_AxisVel[1] * (-1.0);
 		}
 
@@ -148,7 +145,7 @@ void CombinedControl :: _setJS(uint8_t motor_id, double velocity) {
 bool CombinedControl :: _timer(unsigned long lastReadTime) {
 	bool done = false;
 	unsigned long now = millis();
-	if(now - lastReadTime > 200 ) {
+	if(now - lastReadTime > 400 ) {
 		done = true;
 	}
 	return done;
