@@ -127,7 +127,7 @@ while True:
             go_to(Objects[int(ObjectQuery)])
             
     elif query == "j":
-        print("Enabled JOystick...")
+        print("Enabled Joystick...")
         print(arduino.write(str.encode("40,1;")))
         time.sleep(2)
     print()
