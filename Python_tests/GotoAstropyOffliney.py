@@ -15,12 +15,11 @@ import sys
 
 
 # force astropy to work OFFLINE
-iers.conf.auto_download = False
-iers.conf.auto_max_age = None
+#iers.conf.auto_download = False
+#iers.conf.auto_max_age = None
 
 
 loc = EarthLocation(lat=33.1424005*u.deg, lon=-96.8599673*u.deg, height=0*u.m)
-
 
 
 arduino = serial.Serial(port='COM3', baudrate=115200, timeout=.1)
@@ -37,6 +36,20 @@ TargetObject = ''
 
 Objects = ['moon', 'mars', 'jupiter', 'saturn', 'mercury', 'venus', 'sun']
 
+
+def DelayAndCheckForBackspace(delay_in_seconds):
+    BackspaceDetected = False
+    
+    for secs in range(0,delay_in_seconds):
+        time.sleep(1)
+        print('.')
+        if keyboard.is_pressed('backspace'):
+            print ('backspace detected. Exiting tracking...')
+            break
+            BackspaceDetected = True
+
+    return BackspaceDetected
+            
 def send_coords(alt, az):
     print(str(alt) + ", " + str(az))
     if az > 180:
@@ -73,7 +86,8 @@ def track_object(target_object):
     global CurrentAltitude
     global LastAzimuth
     global CurrentAzimuth
-    
+
+    print ('Press Backspace to exit')
     while not keyboard.is_pressed('backspace'):
         
         coords = get_coords(target_object)
@@ -93,7 +107,73 @@ def track_object(target_object):
             #arduino.write(str.encode("42;"))
                 break
                 return
+
+def BuildScanArray(MatrixSize, search_tunning_coeff):
+    #Elevation 
+    Rows = MatrixSize
+    row_scan_value = 0
+
+    #Azimuth
+    Columns = MatrixSize
+    col_scan_value = 0
+
+    matrix = []
+
+    for row in range(Rows):
+        matrix.append([])
+        for column in range(Columns):
+            row_scan_value = -(Rows//2) + row
+            col_scan_value = -(Columns//2) + column
+            if row_scan_value >= 0:
+                row_scan_value =  (row_scan_value*search_tunning_coeff)
+            else:
+                row_scan_value = (row_scan_value*search_tunning_coeff)
+                
+            if col_scan_value >= 0:
+                col_scan_value = (col_scan_value*search_tunning_coeff)
+            else:
+                col_scan_value = (col_scan_value*search_tunning_coeff)
+
+            matrix[row].append((col_scan_value, row_scan_value))
             
+        print (matrix[row])
+
+    return matrix            
+
+
+def Scan_For_Object():
+    global CurrentAltitude
+    global CurrentAzimuth
+
+    MatrixSize = 5
+    search_tunning_coeff = 0.1
+
+    matrix = BuildScanArray(MatrixSize, search_tunning_coeff)
+    print ('Press Backspace to exit')
+        
+    while not keyboard.is_pressed('backspace'):
+
+        for element in range(MatrixSize):
+            if element%2 == 0: # even row scan
+                go_to(CurrentAzimuth + matrix[element][0][0], CurrentAltitude + matrix[element][0][1])
+                BackspaceDetected = DelayAndCheckForBackspace(MatrixSize*2)
+                if BackspaceDetected == False:
+                    go_to(CurrentAzimuth + matrix[element][-1][0], CurrentAltitude + matrix[element][-1][1])
+                    BackspaceDetected = DelayAndCheckForBackspace(MatrixSize*2)
+
+            else:        # odd row scan
+                go_to(CurrentAzimuth + matrix[element][-1][0], CurrentAltitude + matrix[element][-1][1])
+                BackspaceDetected = DelayAndCheckForBackspace(MatrixSize*2)
+                if BackspaceDetected == False:
+                    go_to(CurrentAzimuth + matrix[element][0][0], CurrentAltitude + matrix[element][0][1])
+                    BackspaceDetected = DelayAndCheckForBackspace(MatrixSize*2)
+            
+            if BackspaceDetected == False:
+                print ('backspace detected. Exiting tracking...')
+                break
+                return
+
+
 
 fast = False
 mirror = False
@@ -107,10 +187,11 @@ print (get_coords('moon'))
 print("What object would you like to track?")
 print("or press 'h' to re-center motors,")
 print("or press 'g' to go to object,")
-print("or press 't' to go to object,")
+print("or press 't' to track object,")
 print("or press 'j' to enable joystick,")
 print("press 'f' to switch to fast mode")
 print("press 's' to switch to slow mode")
+print("press 'a' to perform a scAn")
 print("or press 'm' to enable mirror mode")
 print("or press 'n' to disable mirror mode")
 print("'e' to exit")
@@ -144,10 +225,20 @@ while True:
         mirror = False
         print("Disabling mirror mode...")
         arduino.write(str.encode("21,0;"))
+        
     elif keyboard.is_pressed("e"):
         print("Exiting program.") 
         break
     
+    elif keyboard.is_pressed("a"):
+        arduino.write(str.encode("41;")) # disable joystick during Scan
+        if TargetObject != "":
+            print("Scanning for " + TargetObject   + " (press backspace to stop Scan)...")
+            Scan_For_Object()
+
+        else:
+            print("PLease go to a planet first")
+            
     elif keyboard.is_pressed("t"):
         arduino.write(str.encode("41;")) # disable joystick during tracking
         if TargetObject != "":
@@ -209,6 +300,7 @@ while True:
             CurrentAltitude = CurrentAltitude-0.01
         send_coords(CurrentAltitude, CurrentAzimuth)
         print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
+        
     elif keyboard.is_pressed("down"):
 
         if mirror == False:
