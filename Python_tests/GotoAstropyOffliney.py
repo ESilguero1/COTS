@@ -108,7 +108,7 @@ def track_object(target_object):
                 break
                 return
 
-def BuildScanArray(MatrixSize, search_tunning_coeff):
+def BuildScanArray(MatrixSize, step_size):
     #Elevation 
     Rows = MatrixSize
     row_scan_value = 0
@@ -122,17 +122,8 @@ def BuildScanArray(MatrixSize, search_tunning_coeff):
     for row in range(Rows):
         matrix.append([])
         for column in range(Columns):
-            row_scan_value = -(Rows//2) + row
-            col_scan_value = -(Columns//2) + column
-            if row_scan_value >= 0:
-                row_scan_value =  (row_scan_value*search_tunning_coeff)
-            else:
-                row_scan_value = (row_scan_value*search_tunning_coeff)
-                
-            if col_scan_value >= 0:
-                col_scan_value = (col_scan_value*search_tunning_coeff)
-            else:
-                col_scan_value = (col_scan_value*search_tunning_coeff)
+            row_scan_value = (-(Rows//2) + row) * step_size
+            col_scan_value = (-(Columns//2) + column) * step_size
 
             matrix[row].append((col_scan_value, row_scan_value))
             
@@ -146,32 +137,39 @@ def Scan_For_Object():
     global CurrentAzimuth
 
     MatrixSize = 5
-    search_tunning_coeff = 0.1
+    step_size = 0.1
 
-    matrix = BuildScanArray(MatrixSize, search_tunning_coeff)
+    matrix = BuildScanArray(MatrixSize, step_size)
     print ('Press Backspace to exit')
         
     while not keyboard.is_pressed('backspace'):
 
         for element in range(MatrixSize):
-            if element%2 == 0: # even row scan
-                go_to(CurrentAzimuth + matrix[element][0][0], CurrentAltitude + matrix[element][0][1])
+            if element%2 == 0: # even row 
+                NextAzimuth = CurrentAzimuth + matrix[element][0][0]
+                NextAltitude = CurrentAltitude + matrix[element][0][1]
+                print("(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
+                go_to(NextAltitude, NextAzimuth)
                 BackspaceDetected = DelayAndCheckForBackspace(MatrixSize*2)
                 if BackspaceDetected == False:
-                    go_to(CurrentAzimuth + matrix[element][-1][0], CurrentAltitude + matrix[element][-1][1])
+                    NextAzimuth = CurrentAzimuth + matrix[element][-1][0]
+                    NextAltitude = CurrentAltitude + matrix[element][-1][1]
+                    print("(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
+                    go_to(NextAltitude, NextAzimuth)
                     BackspaceDetected = DelayAndCheckForBackspace(MatrixSize*2)
 
             else:        # odd row scan
-                go_to(CurrentAzimuth + matrix[element][-1][0], CurrentAltitude + matrix[element][-1][1])
+                NextAzimuth = CurrentAzimuth + matrix[element][-1][0]
+                NextAltitude = CurrentAltitude + matrix[element][-1][1]
+                print("(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
+                go_to(NextAltitude, NextAzimuth)
                 BackspaceDetected = DelayAndCheckForBackspace(MatrixSize*2)
                 if BackspaceDetected == False:
-                    go_to(CurrentAzimuth + matrix[element][0][0], CurrentAltitude + matrix[element][0][1])
+                    NextAzimuth = CurrentAzimuth + matrix[element][0][0]
+                    NextAltitude = CurrentAltitude + matrix[element][0][1]
+                    print("(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
+                    go_to(NextAltitude, NextAzimuth)
                     BackspaceDetected = DelayAndCheckForBackspace(MatrixSize*2)
-            
-            if BackspaceDetected == False:
-                print ('backspace detected. Exiting tracking...')
-                break
-                return
 
 
 
@@ -271,7 +269,7 @@ while True:
         print ("ObjectQuery", ObjectQuery)
             
     elif keyboard.is_pressed("j"):
-        print("Enabled JOystick...")
+        print("Enabled Joystick...")
         arduino.write(str.encode("40,1;"))
         
     elif keyboard.is_pressed("c"):
