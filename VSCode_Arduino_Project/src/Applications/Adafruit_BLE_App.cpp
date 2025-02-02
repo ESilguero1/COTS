@@ -25,8 +25,6 @@ extern CmdMessenger cmdMessenger;
 String BLE_Str;
 //BLE instatiation
 Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
-//BLE #instatiation
-
 
 // =============== Arduino Functions and Calls ===============
 

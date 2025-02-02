@@ -1,5 +1,6 @@
 #include "System_Control_App.h"
 #include "System_definitions.h"
+#include "CmdMessenger.h"
 #include "Enum.h"
 #include "debugutils.h"
 #include "CombinedControl.h"
@@ -11,14 +12,13 @@ CmdMessenger cmdMessenger = CmdMessenger(Serial);
 
 String outputStr;
 CombinedControl control;
-flags motorFlags[2];
+flags motorFlags[3];
 int status[25];
 
 void attachCommandCallbacks();
 void _checkJS(uint8_t motorID);
 void OnUnknownCommand();
 void onRequestMotorStatus();
-uint16_t RequestMotorStatus(uint8_t target_motor);
 void onRequestStallStatus();
 void onRequestSetPosNoMove();
 void onSetSlowFastJSMotion();
@@ -51,14 +51,15 @@ void onPing();
 
 void System_Control_App :: Init()
 {
-
 	// =============== Setup Motor Control ===============
 
-	// Configure Motor enable and Chip Select Pins
+	// Configure enable and Chip Select Pins for alll motors
 	pinMode(MTR_CS0, OUTPUT);
 	pinMode(MTR_CS1, OUTPUT);
+	pinMode(MTR_CS2, OUTPUT);
 	pinMode(MTR_ENA_0, OUTPUT);
 	pinMode(MTR_ENA_1, OUTPUT);
+	pinMode(MTR_ENA_2, OUTPUT);
 
 	// Configure joystick stop switch
 	pinMode(JS_STOP_SWTICH, INPUT);
@@ -79,12 +80,9 @@ void System_Control_App :: Init()
 	// Initialize the motor and Sensor objects
 	control.begin();
 
-	outputStr.reserve(128);
+	outputStr.reserve(128); /*reserve output string for a max of 128 characters*/
 	cmdMessenger.printLfCr();
-	attachCommandCallbacks();
-	RequestMotorStatus(0);
-	RequestMotorStatus(1);
-	
+	attachCommandCallbacks();	
 }
 
 void System_Control_App :: ServiceSystemResponseApp()
@@ -114,6 +112,25 @@ void System_Control_App :: ServiceSystemResponseApp()
 		}
 	}
 
+}
+
+uint32_t  System_Control_App :: RequestMotorStatus(uint8_t target_motor)
+{
+	uint32_t motorStat=0;
+	outputStr.remove(0);
+
+	control.status(target_motor, &status[0]);
+
+	for (int i = 0; i < MTR_STATUS_SIZE; i++)
+	{
+		motorStat |= status[i]<<i; /* Rebuild hex value */
+	}
+
+	outputStr.concat(motorStat); /* print out for debug only */
+	outputStr.concat(F(";"));
+	Serial.println(outputStr);
+
+	return motorStat;
 }
 
 // =============== Command Callbacks ===============
@@ -251,28 +268,6 @@ void onRequestMotorStatus()
 
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
-}
-
-
-uint16_t RequestMotorStatus(uint8_t target_motor)
-{
-	int motorStat=0;
-	outputStr.remove(0);
-
-	control.status(target_motor, &status[0]);
-
-	for (int i = 0; i < MTR_STATUS_SIZE; i++)
-	{
-		motorStat |= status[i]<<i;
-		//tputStr.concat(F(","));
-		//tputStr.concat(status[i]);
-	}
-
-	outputStr.concat(motorStat);
-	outputStr.concat(F(";"));
-	Serial.println(outputStr);
-
-	return motorStat;
 }
 
 // Format : outputStr = "g,time,status;"

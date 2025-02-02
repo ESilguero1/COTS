@@ -17,6 +17,7 @@ void CombinedControl :: begin() {
 	//they must be set after construction by the MotorControl :: set function.
 	motor[0].set(MTR_CS0, MTR_ENA_0, 0); 
  	motor[1].set(MTR_CS1, MTR_ENA_1, 1); 
+	motor[2].set(MTR_CS2, MTR_ENA_2, 2); 
  
 	// double yrange, double ythreshold, int ypin, double xrange, double xthreshold, int xpin
 	joystick.set(10000.0, 0.005 * 10000.0, JS_YAXIS_INPUT, 10000, 0.005 * 10000.0, JS_XAXIS_INPUT);
@@ -25,6 +26,7 @@ void CombinedControl :: begin() {
 	_stepResolution = 256;
   	_lastX_Y_vel[0] = 0;
   	_lastX_Y_vel[1] = 0;
+	_lastX_Y_vel[2] = 0;
 	_resolutionNum = 1;
 	_mirrorMode = 0;
 	_slow_fast = 0; 
@@ -33,15 +35,20 @@ void CombinedControl :: begin() {
 	joystick.begin();
 	motor[0].begin();
   	motor[1].begin();
+	motor[2].begin();
 
 	// Print out motor data to confirm proper results
 	Serial.print(motor[0].getMotorID());
-	Serial.print(F(" : Motor Data: "));
+	Serial.print(F(" : Motor 1 Data: "));
 	motor[0].getMotorData();
 	
  	Serial.print(motor[1].getMotorID());
-	Serial.print(F(" : Motor Data: "));
+	Serial.print(F(" : Motor 2 Data: "));
 	motor[1].getMotorData();
+
+ 	Serial.print(motor[2].getMotorID());
+	Serial.print(F(" : Motor 3 Data: "));
+	motor[2].getMotorData();
 	Serial.flush();
 }
 
@@ -56,6 +63,8 @@ void CombinedControl :: begin() {
 
 void CombinedControl :: disableJoystick() {
 	motor[0].stop();
+	motor[1].stop();
+	motor[2].stop();
 }
 
 /* ======================================================================
@@ -167,23 +176,27 @@ void CombinedControl :: goPos(uint8_t motor_id, signed long position)
 		{	
 			if ((position < -4582400) || (position >= 4608000) ) //Limit range between -179 and 180 degrees
 			{
-			Serial.print("Bad Horsey!");
+			Serial.print("Limit range between -179 and 180 degrees exceeded");
 			}
 			else 
 			{
 				motor[motor_id].goPos(position);
 			}
 		}
-		else // motor 1 
+		else if (motor_id == 1)
 		{	
 			if ((position < 0) || (position > 2304000) )
 			{
-			Serial.print("Bad Horsey!");
+			Serial.print("Limit range exceeded");
 			}
 			else 
 			{
 				motor[motor_id].goPos(position);
 			}
+		}
+		else 
+		{	
+			motor[motor_id].goPos(position);
 		}
 	}
 }

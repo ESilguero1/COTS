@@ -57,6 +57,21 @@ void BNO080_App :: Service_BNO080()
     Serial.print(yaw, 1);
 
     Serial.println();
+
+    float x = mBNO080IMU.getAccelX();
+    float y = mBNO080IMU.getAccelY();
+    float z = mBNO080IMU.getAccelZ();
+
+    Serial.print(x, 2);
+    Serial.print(F(","));
+    Serial.print(y, 2);
+    Serial.print(F(","));
+    Serial.print(z, 2);
+    Serial.print(F(","));
+
+    Serial.println();
+
+
   }
 
 }

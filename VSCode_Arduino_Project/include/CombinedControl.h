@@ -77,13 +77,13 @@ class CombinedControl {
       void SetMirrorMode(uint8_t mirror_mode ) ;
 
    private:
-      MotorControl motor[2];
+      MotorControl motor[3];
       Joystick joystick;
 
       int _seekStep;
       int _stepResolution;
       int _resolutionNum;
-      double _lastX_Y_vel[2];
+      double _lastX_Y_vel[3];
       unsigned long _lastRead;
       bool _mirrorMode;
       bool _slow_fast;

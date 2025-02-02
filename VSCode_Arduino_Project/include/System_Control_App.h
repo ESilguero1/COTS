@@ -9,10 +9,8 @@
    ======================================================================== */
 
 #define System_Control_App_H
-#include "System_definitions.h"
 #include <SPI.h>
 #include "Arduino.h"
-#include "CmdMessenger.h"
 
 class System_Control_App 
 {
@@ -21,5 +19,7 @@ class System_Control_App
 		// Class Function
       void Init();
 	   void ServiceSystemResponseApp();
+      uint32_t RequestMotorStatus(uint8_t target_motor);
 };
+
 #endif
