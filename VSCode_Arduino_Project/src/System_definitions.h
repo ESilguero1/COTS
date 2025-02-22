@@ -13,11 +13,11 @@
 
 #define MTR_ENA_0 5
 #define MTR_ENA_1 6
-#define MTR_ENA_2 2
+#define MTR_ENA_2 1
 
 #define MTR_CS0 10 
 #define MTR_CS1 11 
-#define MTR_CS2 3 
+#define MTR_CS2 2 
 
 #define MISOPIN  50 // UNUSED. noted for reference only. Due uses SPI header
 #define MOSIPIN  51 // UNUSED. noted for reference only. Due uses SPI header
@@ -31,6 +31,7 @@
 
 // Additional constants
 #define STAND_MTR_VELOCITY 	50000//100000
+#define STAND_MTR3_VELOCITY 	400//100000
 #define MTR_STATUS_SIZE		25
 #define MOTOR_STEPS		    200 //Motor (1.8) 360/1.8
 

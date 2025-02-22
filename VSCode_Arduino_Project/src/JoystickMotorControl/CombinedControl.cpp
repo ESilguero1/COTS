@@ -1,6 +1,6 @@
 #include "CombinedControl.h"
 
-double fast_slow_multiplier[2] = {1.0, 5.0};
+double fast_slow_multiplier[3] = {1.0, 5.0,0.7};
 
 /* ======================================================================
 	Initializes the control object to control both the motor and the
@@ -37,6 +37,10 @@ void CombinedControl :: begin() {
   	motor[1].begin();
 	motor[2].begin();
 
+	setPower(2,2,20);
+	setVelocity(2,STAND_MTR3_VELOCITY);
+	setAcceleration(2, 50);
+
 	// Print out motor data to confirm proper results
 	Serial.print(motor[0].getMotorID());
 	Serial.print(F(" : Motor 1 Data: "));
@@ -50,6 +54,8 @@ void CombinedControl :: begin() {
 	Serial.print(F(" : Motor 3 Data: "));
 	motor[2].getMotorData();
 	Serial.flush();
+
+	
 }
 
 //====================================================================================
@@ -81,11 +87,12 @@ void CombinedControl :: enableJoystick()
 	if (CombinedControl :: _timer(_lastRead)) 
 	{
 		_lastRead = millis();
-		double X_Y_AxisVel[2];
-		static boolean X_Y_RampModeSet[2];
+		double X_Y_AxisVel[3] = {0,0,0};
+		static boolean X_Y_RampModeSet[3];
 
 		X_Y_AxisVel[0] = joystick.xAxisControl() * fast_slow_multiplier[_slow_fast];// MS: Temporarily slowed down joystick to eliminate backlash
 		X_Y_AxisVel[1] = joystick.yAxisControl() * fast_slow_multiplier[_slow_fast];;
+		X_Y_AxisVel[2] = joystick.yAxisControl() * fast_slow_multiplier[_slow_fast];;
 
 	
 		if (_mirrorMode == 1)
@@ -100,7 +107,7 @@ void CombinedControl :: enableJoystick()
 			Serial.print("X_AxisVel: ");
 			Serial.println(X_Y_AxisVel[1]);
 		#endif
-		for (uint8_t axis = 0; axis < 2; axis++)
+		for (uint8_t axis = 2; axis < 3; axis++)
 		{
 			// check the direction of the velocity and past velocity
 			if ( (_lastX_Y_vel[axis] >= 0) ^ (X_Y_AxisVel[axis] < 0) ) 

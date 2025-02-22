@@ -60,6 +60,11 @@ void System_Control_App :: Init()
 	pinMode(MTR_ENA_0, OUTPUT);
 	pinMode(MTR_ENA_1, OUTPUT);
 	pinMode(MTR_ENA_2, OUTPUT);
+	
+	digitalWrite(MTR_ENA_0, 0);
+	digitalWrite(MTR_ENA_1, 0);
+	digitalWrite(MTR_ENA_2, 0);
+	
 
 	// Configure joystick stop switch
 	pinMode(JS_STOP_SWTICH, INPUT);
@@ -97,7 +102,7 @@ void System_Control_App :: ServiceSystemResponseApp()
 		control.enableJoystick();
 	}
 
-	for (uint8_t motor = 0; motor < 2; motor++)
+	for (uint8_t motor = 0; motor < 3; motor++)
 	{
 		// 12 us
 		if (motorFlags[motor].isSeeking)

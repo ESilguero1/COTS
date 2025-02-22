@@ -17,7 +17,7 @@
 struct flags
 {
 	public:
-		bool isJSEnable 		= false;
+		bool isJSEnable 		= true;
 		bool isSeeking			= false;
 		bool direction			= true;
 		bool isPositioning		= false;
@@ -87,6 +87,7 @@ class CombinedControl {
       unsigned long _lastRead;
       bool _mirrorMode;
       bool _slow_fast;
+
 
       void _setJS(uint8_t motor_id, double velocity);
       bool _timer(unsigned long lastReadTime);

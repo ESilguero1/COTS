@@ -12,18 +12,19 @@ uint8_t BNO080_App :: Init()
   uint8_t initState;
 
   Wire.begin();
+  //Wire.setClock(100000);
 
   //Are you using a ESP? Check this issue for more information: https://github.com/sparkfun/SparkFun_BNO080_Arduino_Library/issues/16
 //  //=================================
 //  delay(100); //  Wait for BNO to boot
 //  // Start i2c and BNO080
-//  Wire.flush();   // Reset I2C
-//  IMU.begin(BNO080_DEFAULT_ADDRESS, Wire);
-//  Wire.begin(4, 5);
-//  Wire.setClockStretchLimit(4000);
+ // Wire.flush();   // Reset I2C
+  //mBNO080IMU.begin(BNO080_DEFAULT_ADDRESS, Wire);
+  //Wire.begin();
+  //Wire.setClockStretchLimit(4000);
 //  //=================================
 
-  if (mBNO080IMU.begin(0x4A) == false)
+  if (mBNO080IMU.begin(BNO080_DEFAULT_ADDRESS) == false)
   {
     initState = 1;
     Serial.println(F("BNO080 not detected at default I2C address. Check your jumpers and the hookup guide."));
