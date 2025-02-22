@@ -27,7 +27,7 @@ void setup()
 	{
 		InitMotorState |= (1<<INIT_MOTOR2_STAT_FAILED);
 	}
- 	if (SystemControlApp.RequestMotorStatus(2) != 12582996)
+ 	if (SystemControlApp.RequestMotorStatus(2) > 12595220)
 	{
 		InitMotorState |= (1<<INIT_MOTOR3_STAT_FAILED);
 	} 

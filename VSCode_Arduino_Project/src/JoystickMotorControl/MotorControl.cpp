@@ -46,7 +46,7 @@ MotorControl :: MotorControl() {
 	 
 	IHOLD_IRUN.rw= WRITE;
 	IHOLD_IRUN.address = ADDRESS_IHOLD_IRUN;
-	IHOLD_IRUN.data= 0x0007140F;   //IHOLD_IRUN: IHOLD=3, IRUN=10 (max.current), IHOLDDELAY=7
+	IHOLD_IRUN.data= 0x0007140F;   //IHOLD_IRUN: IHOLD=15, IRUN=20 (max.current), IHOLDDELAY=7
 	 
 	TPOWERDOWN.rw  = WRITE;
 	TPOWERDOWN.address= ADDRESS_TZEROWAIT;
@@ -640,7 +640,7 @@ bool MotorControl :: switchActiveEnable(bool fw, bool bw) {
 
 void MotorControl :: setPowerLevel(unsigned long holdPower, unsigned long runPower) {
 
-	IHOLD_IRUN.data = holdPower + ( runPower << 8 );
+	IHOLD_IRUN.data = holdPower | ( runPower << 8 ) | ( 7 << 16 );
 	MotorControl :: sendData(&IHOLD_IRUN);
 }
 
