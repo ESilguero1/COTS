@@ -1,127 +1,156 @@
+/***********************************************************************************************//**
+ * @file       Adafruit_BLE_App.cpp
+ * @details    IMU application module. Services IMU initialization, data collection and filtering
+ * @author		Miguel Silguero
+ * @copyright  Copyright (c) 2024-2025, Horizonless Embedded Solutions LLC
+ * @date       07.01.2024 (created)
+ *
+ **************************************************************************************************/
+
+/***************************************************************************************************
+ * INCLUDES
+ * 
+ * Include necessary libraries for BLE communication, system definitions, and Arduino SPI support.
+ **************************************************************************************************/
 #include "Adafruit_BLE_App.h"
 #include "System_definitions.h"
 #include "CmdMessenger.h"
-
-///BLE imports
 #include <Arduino.h>
 #include <SPI.h>
 #include "Adafruit_BLE.h"
 #include "Adafruit_BluefruitLE_SPI.h"
 #include "Adafruit_BluefruitLE_UART.h"
-
 #include "BluefruitConfig.h"
-//BLE #defines
-    #define FACTORYRESET_ENABLE         0
-    #define MINIMUM_FIRMWARE_VERSION    "0.6.6"
-    #define MODE_LED_BEHAVIOUR          "MODE"
-//BLE #defines 
 
-//#define DEBUG 1
-//#define DEBUG_CO 1
-#define BLE_CHARS_SIZE 64
+/***************************************************************************************************
+ * CONSTANTS AND DEFINITIONS
+ * 
+ * Define constants for BLE settings, firmware version, and buffer sizes.
+ **************************************************************************************************/
+#define FACTORYRESET_ENABLE         0      /* Enable or disable factory reset during initialization */
+#define MINIMUM_FIRMWARE_VERSION    "0.6.6" /* Minimum required firmware version for BLE module */
+#define MODE_LED_BEHAVIOUR          "MODE"  /* Define LED behavior mode for BLE module */
+//#define DEBUG 1                        /* Uncomment to enable debugging */
+//#define DEBUG_CO 1                     /* Uncomment to enable CO debugging */
+#define BLE_CHARS_SIZE 64              /* Define the buffer size for BLE communication */
 
-extern CmdMessenger cmdMessenger;
+/***************************************************************************************************
+ * MODULE VARIABLES
+ * 
+ * Declare global and external variables used in BLE communication.
+ **************************************************************************************************/
+extern CmdMessenger cmdMessenger; /* External command messenger instance for BLE communication */
+String BLE_Str;                   /* String buffer for storing received BLE data */
 
-String BLE_Str;
-//BLE instatiation
+/* BLE module instantiation with SPI interface */
 Adafruit_BluefruitLE_SPI ble(BLUEFRUIT_SPI_CS, BLUEFRUIT_SPI_IRQ, BLUEFRUIT_SPI_RST);
 
-// =============== Arduino Functions and Calls ===============
+/***************************************************************************************************
+ * FUNCTION DEFINITIONS
+ **************************************************************************************************/
 
+/***********************************************************************************************//**
+ * @details     Initializes the BLE module and establishes a connection.
+ * @return      Returns 0 on successful initialization, 1 on failure.
+ **************************************************************************************************/
 uint8_t Adafruit_BLE_App :: Init()
 {
-	uint8_t	initState = 1;
+	uint8_t initState = 1; /* Initialize state variable, 1 indicates failure by default */
 
-	//Configure BLE pins
+	/* Configure BLE pins as output */
 	pinMode(BLUEFRUIT_SPI_CS, OUTPUT);
 	pinMode(BLUEFRUIT_SPI_RST, OUTPUT);
 	digitalWrite(BLUEFRUIT_SPI_RST, HIGH);
 
-	// =============== Initialize BLE String Objects ===============
-
+	/* Reserve space for BLE string buffer */
 	BLE_Str.reserve(BLE_CHARS_SIZE);
 
-	/* Initialise the module */
-	Serial.print(F("Initialising the Bluefruit LE module: "));
+	/* Initialize BLE module */
+	Serial.print(F("Init the Bluefruit LE "));
 
-	if ( !ble.begin(VERBOSE_MODE) )
+	if (!ble.begin(VERBOSE_MODE))
 	{
+		/* Print error message if BLE module is not found */
 		Serial.print(F("Couldn't find Bluefruit, make sure it's in CoMmanD mode & check wiring?"));
 	}
 	else
 	{
-		Serial.println( F("BLE OK!") );
-		// Disable command echo from Bluefruit //
+		/* Print success message and disable command echo */
+		Serial.println(F("BLE OK!"));
 		ble.echo(false);
 
-		Serial.println("Requesting Bluefruit info:");
-		// Print Bluefruit information //
-		ble.info();
+		/* Print BLE module information */
+		//ble.info();
+		//Serial.println();
 
-		Serial.println(F("Please use Adafruit Bluefruit LE app to connect in UART mode"));
-		Serial.println(F("Then Enter characters to send to Bluefruit"));
-		Serial.println();
+		/* Disable verbose debugging mode */
+		ble.verbose(false);
 
-		ble.verbose(false);  // debug info is a little annoying after this point!
-		// Wait for connection //
-		delay(1000);
-		if (ble.isConnected()) 
+		/* Wait for BLE connection */
+		for (uint8_t dls = 0; dls < 10; dls++)
 		{
-			// LED Activity command is only supported from 0.6.6
-			if ( ble.isVersionAtLeast(MINIMUM_FIRMWARE_VERSION) )
+			delay(100);
+			digitalWrite(SYS_LED, !digitalRead(SYS_LED));
+		}
+
+		if (ble.isConnected())
+		{
+			/* Configure LED activity mode if firmware version is sufficient */
+			if (ble.isVersionAtLeast(MINIMUM_FIRMWARE_VERSION))
 			{
-				// Change Mode LED Activity
 				Serial.println(F("Change LED activity to " MODE_LED_BEHAVIOUR));
 				ble.sendCommandCheckOK("AT+HWModeLED=" MODE_LED_BEHAVIOUR);
 			}
 
-			// Set module to DATA mode
-			Serial.println( F("Switching to DATA mode!") );
+			/* Switch BLE module to data mode */
+			Serial.println(F("Switching to DATA mode!"));
 			ble.setMode(BLUEFRUIT_MODE_DATA);
 			ble.print("BLE INIT completed");
 			Serial.println("BLE INIT completed successfully");
-			initState = 0;
+			initState = 0; /* Set state to success */
 		}
 		else
 		{
+			/* Print failure message if connection fails */
 			Serial.println("BLE INIT FAILED");
 			Serial.println(F("Please use Adafruit Bluefruit LE app to connect in UART mode"));
 			Serial.println(F("Then Enter characters to send to Bluefruit"));
 			Serial.println();
 		}
+	}
 
-	} 
-	
-	return initState;
+	return initState; /* Return the initialization state */
 }
 
-
+/***********************************************************************************************//**
+ * @details     Handles incoming BLE UART data and processes commands.
+ **************************************************************************************************/
 void Adafruit_BLE_App :: Service_BLE_UART()
 {
-	// Process BLE received characters
-	if ( ble.available() )
+	/* Check if there is available data from BLE module */
+	if (ble.available())
 	{
-		char lastBLEcharReceived = (char)(ble.read());
-		BLE_Str.concat(lastBLEcharReceived);
+		char lastBLEcharReceived = (char)(ble.read()); /* Read the received character */
+		BLE_Str.concat(lastBLEcharReceived); /* Append to BLE string buffer */
+
+		/* Process BLE command when end-of-command character ';' is received */
 		if (lastBLEcharReceived == ';')
 		{
-
+			/* Process the received BLE command */
 			for (uint8_t e = 0; e < BLE_CHARS_SIZE; e++)
 			{
-  				int messageState = cmdMessenger.processLine(BLE_Str[e]);
+				int messageState = cmdMessenger.processLine(BLE_Str[e]);
 
-				// If waiting for acknowledge command
+				/* Check if message processing is complete */
 				if (messageState == kEndOfMessage)
 				{
 					cmdMessenger.handleMessage();
 					break;
 				}  
 			}
+
+			/* Clear BLE string buffer after processing */
 			BLE_Str.remove(0);
 		}
 	}
-
-
-
-
 }

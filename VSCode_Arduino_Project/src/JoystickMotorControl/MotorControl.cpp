@@ -13,7 +13,7 @@ byte READ = 0x00;
 MotorControl :: MotorControl() {
 
 	// Initialize typical data for motor
-	_microSteps = 256;
+	_microSteps = MOTOR_MICRO_STEPS;
 	_homeCaseNum = 0;
 	_isHomed = false;
 	_resolutionNum = 1;
@@ -140,7 +140,7 @@ MotorControl :: MotorControl(byte csPin, byte enablePin, int ID) {
 	motorID = ID;
 
 	// Initialize typical data for motor
-	_microSteps = 256;
+	_microSteps = MOTOR_MICRO_STEPS;
 	_homeCaseNum = 0;
 	_isHomed = false;
 	_resolutionNum = 1;
@@ -999,7 +999,7 @@ void MotorControl :: forward(unsigned long stepsForward, unsigned long velocity)
 		MotorControl :: setRampMode(ADDRESS_MODE_POSITION);
 	}
 
-	unsigned long amountForward = stepsForward * MOTOR_STEPS;
+	unsigned long amountForward = stepsForward * MOTOR_MICRO_STEPS;
 
  	unsigned long currentPosition = MotorControl :: getXtarget();
  	unsigned long xTarget = currentPosition + (forwardDirection.dirMultiplier)*amountForward;
@@ -1032,7 +1032,7 @@ void MotorControl :: reverse(unsigned long stepsBackward, unsigned long velocity
 		MotorControl :: setRampMode(ADDRESS_MODE_POSITION);
 	}
 
- 	unsigned long amountBackward = stepsBackward * MOTOR_STEPS;
+ 	unsigned long amountBackward = stepsBackward * MOTOR_MICRO_STEPS;
 
  	unsigned long currentPosition = MotorControl :: getXtarget();
  	unsigned long xTarget = currentPosition + (backwardDirection.dirMultiplier)*amountBackward;

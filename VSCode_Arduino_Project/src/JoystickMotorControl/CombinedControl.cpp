@@ -1,6 +1,6 @@
 #include "CombinedControl.h"
 
-double fast_slow_multiplier[3] = {1.0, 5.0,0.7};
+double fast_slow_multiplier[3] = {1.0, 5.0,1.0};
 
 /* ======================================================================
 	Initializes the control object to control both the motor and the
@@ -37,9 +37,12 @@ void CombinedControl :: begin() {
   	motor[1].begin();
 	motor[2].begin();
 
-	setPower(2,2,20);
+	motor[2].stop();
+	
+	setPower(2,MTR3_HOLD_POWER,MTR3_RUN_POWER);
 	setVelocity(2,STAND_MTR3_VELOCITY);
-	setAcceleration(2, 50);
+	setAcceleration(2, MTR3_ACCELERATION);
+	
 
 	// Print out motor data to confirm proper results
 	Serial.print(motor[0].getMotorID());
@@ -54,8 +57,6 @@ void CombinedControl :: begin() {
 	Serial.print(F(" : Motor 3 Data: "));
 	motor[2].getMotorData();
 	Serial.flush();
-
-	
 }
 
 //====================================================================================
@@ -83,17 +84,26 @@ void CombinedControl :: disableJoystick() {
 void CombinedControl :: enableJoystick() 
 {
 	
+	static bool firstRun = false;
 
 	if (CombinedControl :: _timer(_lastRead)) 
 	{
 		_lastRead = millis();
 		double X_Y_AxisVel[3] = {0,0,0};
+		double LastVal =0.0;
+		double PresentVal =0.0;
 		static boolean X_Y_RampModeSet[3];
 
 		X_Y_AxisVel[0] = joystick.xAxisControl() * fast_slow_multiplier[_slow_fast];// MS: Temporarily slowed down joystick to eliminate backlash
-		X_Y_AxisVel[1] = joystick.yAxisControl() * fast_slow_multiplier[_slow_fast];;
-		X_Y_AxisVel[2] = joystick.yAxisControl() * fast_slow_multiplier[_slow_fast];;
+		X_Y_AxisVel[1] = joystick.yAxisControl() * fast_slow_multiplier[_slow_fast];
+		//X_Y_AxisVel[2] = joystick.yAxisControl() * fast_slow_multiplier[_slow_fast];
 
+		X_Y_AxisVel[2] = (joystick.yAxisControl() + joystick.yAxisControl())/ 2.0;
+		if (firstRun == false)
+		{
+			firstRun = true;
+			_lastX_Y_vel[2] = X_Y_AxisVel[2];
+		}
 	
 		if (_mirrorMode == 1)
 		{
@@ -113,11 +123,16 @@ void CombinedControl :: enableJoystick()
 			if ( (_lastX_Y_vel[axis] >= 0) ^ (X_Y_AxisVel[axis] < 0) ) 
 			{
 				// if it exceeds a certain range, update the driving
-				if( (abs(X_Y_AxisVel[axis]) > abs(_lastX_Y_vel[axis]) * 1.10) || (abs(X_Y_AxisVel[axis]) < abs(_lastX_Y_vel[axis]) * 0.90) ) 
+				PresentVal = abs(X_Y_AxisVel[axis]);
+				LastVal = abs(_lastX_Y_vel[axis]);
+
+				if( ( PresentVal > ( LastVal * 1.25)) || ( PresentVal < (LastVal * 0.75) ) ) 
 				{
 					_lastX_Y_vel[axis] = X_Y_AxisVel[axis];
 					CombinedControl :: _setJS(axis, X_Y_AxisVel[axis]);
 					X_Y_RampModeSet[axis] = false;
+					motor[axis].status_standstill = false;
+					motor[axis].powerEnable();
 				}
 			}
 			// always update motor if velocity and last velocity are in different directions
@@ -126,12 +141,14 @@ void CombinedControl :: enableJoystick()
 				_lastX_Y_vel[axis] = X_Y_AxisVel[axis];
 				CombinedControl :: _setJS(axis, X_Y_AxisVel[axis]);
 				X_Y_RampModeSet[axis] = false;
+				motor[axis].status_standstill = false;
+				motor[axis].powerEnable();
 			}
 
-			if ((X_Y_RampModeSet[axis] == false) && (X_Y_AxisVel[axis] == 0.0))
+			if ((X_Y_RampModeSet[axis] == false) && (X_Y_AxisVel[axis] < 150.0))
 			{
 				X_Y_RampModeSet[axis] = true;
-				//motor[axis].setRampMode(ADDRESS_MODE_POSITION);
+				//motor[axis].powerDisable();
 				//motor[axis].setVelocity(STAND_MTR_VELOCITY);
 			}
 }
@@ -266,6 +283,7 @@ void CombinedControl :: constReverse(uint8_t motor_id, unsigned long velocity) {
 
 void CombinedControl :: stop(uint8_t motor_id) {
 	motor[motor_id].stop();
+	motor[motor_id].powerDisable();
 }
 
 /* ======================================================================
@@ -377,8 +395,17 @@ unsigned long  CombinedControl :: sgStatus(uint8_t motor_id) {
 	Checks and confirms if the motor comes to a standstill
  ====================================================================== */
 
-bool CombinedControl :: standstill(uint8_t motor_id) {
+bool CombinedControl :: standstill(uint8_t motor_id)
+ {
 	return motor[motor_id].status_standstill;
+}
+/* ======================================================================
+	Sets motor standstill value
+ ====================================================================== */
+
+ void CombinedControl :: Setstandstill(uint8_t motor_id, bool state) 
+{
+	motor[motor_id].status_standstill = state;
 }
 
 /* ======================================================================

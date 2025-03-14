@@ -54,6 +54,7 @@ class CombinedControl {
       unsigned long sgStatus(uint8_t motor_id);                                            // returns the stallguard status info
 
       bool standstill(uint8_t motor_id);                                                   // checks if the motor is at a standstill
+      void Setstandstill(uint8_t motor_id, bool state);                                    // sets motor standstill value
 
       double getXactual(uint8_t motor_id);                                                 // returns the position of the motor
       unsigned long getVelocity(uint8_t motor_id);                                         // returns the vmax speed

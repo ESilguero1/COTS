@@ -12,6 +12,8 @@ from astropy.coordinates import SkyCoord, EarthLocation, AltAz
 from astropy import units as u
 import time;
 import sys
+import struct
+import string
 
 
 # force astropy to work OFFLINE
@@ -22,10 +24,9 @@ import sys
 loc = EarthLocation(lat=33.1424005*u.deg, lon=-96.8599673*u.deg, height=0*u.m)
 
 
-arduino = serial.Serial(port='COM3', baudrate=115200, timeout=.1)
+arduino = serial.Serial(port='COM3', baudrate=115200, timeout=.2)
 
-CurrentAltitude = 0
-CurrentAzimuth = 0
+
 
 OffsetAltitude = 0
 OffsettAzimuth = 0
@@ -172,12 +173,85 @@ def Scan_For_Object():
                     BackspaceDetected = DelayAndCheckForBackspace(MatrixSize*2)
 
 
+def hex_to_float(hex_string):
+    try:
+        hex_string = hex_string.zfill(8)
+        
+        # Remove '0x' prefix and any leading/trailing spaces, then convert to bytes
+        hex_string = hex_string.replace("0x", "").strip()
+        byte_data = bytes.fromhex(hex_string)
+
+        # Unpack the byte data as a float (assuming big-endian format)
+        float_value = struct.unpack('>f', byte_data)[0]
+        return float_value
+    
+    except ValueError as e:
+        return f"Error: Invalid hex string - {e}"
+    except struct.error as e:
+        return f"Error: Could not unpack hex data - {e}"
+
+def ReadIMUdataSet():
+    Response = []
+    arduino.write(str.encode("27;")) # GET_IMU_AVE_DATA
+    time.sleep(0.1)
+    #print(arduino.inWaiting())
+    IMUDat= str(arduino.read(arduino.inWaiting()))
+    #print(IMUDat)
+    IMUDatSplit = IMUDat.split(",")
+    #print(len(IMUDatSplit))
+    
+    if len(IMUDatSplit)>8:
+
+        Azimuth = hex_to_float((IMUDatSplit[2][2:]))
+        Altitude = hex_to_float((IMUDatSplit[3][2:]))
+        Yaw = hex_to_float((IMUDatSplit[4][2:]))
+
+        AccelX = hex_to_float((IMUDatSplit[5][2:]))
+        AccelY = hex_to_float((IMUDatSplit[6][2:]))
+        AccelZ = hex_to_float((IMUDatSplit[7][2:]))
+        Response = [Azimuth, Altitude, Yaw, AccelX, AccelY, AccelZ]
+
+    return Response
 
 fast = False
 mirror = False
 arduino.flushInput()
-arduino.write(str.encode("20,0;"))
-arduino.write(str.encode("21,0;"))
+
+for sec in range(0,30):
+    
+    time.sleep(0.1)
+    print(".", end="")
+    
+arduino.flushInput()
+
+arduino.write(str.encode("20,0;")) # SET_JS_SLOW_FAST
+arduino.write(str.encode("21,0;")) # SET_JS_MIRROR_MODE
+
+
+
+for sec in range(0,30):
+    
+    time.sleep(0.1)
+    print(".", end="")
+
+arduino.flushInput()
+
+
+IMUData = ReadIMUdataSet()
+if IMUData[0] == 0.0:
+    print (IMUData)
+    print(" IMU data collection failure.Please check system state")
+    exit
+else:
+    if (IMUData[1] == > 10.0) or(IMUData[1] == < 10.0): # Check Azimuth's general direction
+        print (IMUData[1])
+        print("PLease point the telescope in the general NOrth direction")
+        exit
+    else:
+        CurrentAltitude = IMUData[0]
+        CurrentAzimuth = IMUData[1]
+        
+sdfd=sd
 
 print (get_coords('moon'))
 

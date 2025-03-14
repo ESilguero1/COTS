@@ -1,124 +1,176 @@
+/***********************************************************************************************//**
+ * @file       BNO080_App.cpp
+ * @details    System control application module. Motors and joystick initialization.
+ *             Services serial communication requests and responses.
+ * @author		Miguel Silguero
+ * @copyright  Copyright (c) 2024-2025, Horizonless Embedded Solutions LLC
+ * @date       12.01.2024 (created)
+ *
+ **************************************************************************************************/
+
+/***************************************************************************************************
+ * INCLUDES
+ **************************************************************************************************/
 #include "System_Control_App.h"
 #include "System_definitions.h"
 #include "CmdMessenger.h"
-#include "Enum.h"
 #include "debugutils.h"
 #include "CombinedControl.h"
+#include <SPI.h>
 
+/***************************************************************************************************
+ * CONSTANTS AND DEFINITIONS
+ **************************************************************************************************/
 
+/***************************************************************************************************
+ * MODULE VARIABLES
+ **************************************************************************************************/
+CmdMessenger cmdMessenger = CmdMessenger(Serial); // Serial communication handler
+String outputStr; // String buffer for serial output
+CombinedControl control; // Object for managing motor and joystick control
+flags motorFlags[3]; // Flags for motor status tracking
+int status[25]; // Array for storing system status data
+extern union floatUnion AveragedIMUdata[6];
 
-// Build extra objects
-CmdMessenger cmdMessenger = CmdMessenger(Serial);
+/***************************************************************************************************
+ * PRIVATE FUNCTION PROTOTYPES
+ **************************************************************************************************/
+void attachCommandCallbacks(); /* Attach command handlers */
+void _checkJS(uint8_t motorID); /* Check joystick input for a specific motor */
+void OnUnknownCommand(); /* Handler for unknown serial commands */
+void onRequestMotorStatus(); /* Request motor status */
+void onRequestStallStatus(); /* Request stall status */
+void onRequestSetPosNoMove(); /* Set motor position without movement */
+void onSetSlowFastJSMotion(); /* Adjust joystick motion sensitivity */
+void onSetJSMirrorMode(); /* Set joystick mirror mode */
+void onGetXactual(); /* Get motor position */
+void onGetVelocity(); /* Get motor velocity */
+void onGetAcceleration(); /* Get motor acceleration */
+void onGetDeceleration(); /* Get motor deceleration */
+void onGetPower(); /* Get motor power consumption */
+void onGetIMUData(); /* Collected averaged IMU data */
 
-String outputStr;
-CombinedControl control;
-flags motorFlags[3];
-int status[25];
+void onConstantForward(); /* Move motor at a constant speed forward */
+void onConstantBackward(); /* Move motor at a constant speed backward */
+void onMovePosition(); /* Move motor to a specified position */
+void onMoveForward(); /* Move motor forward */
+void onMoveBackward(); /* Move motor backward */
+void onVelocity(); /* Set motor velocity */
+void onAcceleration(); /* Set motor acceleration */
+void onDeceleration(); /* Set motor deceleration */
+void onPower(); /* Set motor power */
+void onDirection(); /* Set motor direction */
+void onJSEnable(); /* Enable joystick control */
+void onJSDisable(); /* Disable joystick control */
+void onMotorStop(); /* Stop the motor */
+void onMotorHome(); /* Move motor to home position */
+void onSeek(); /* Seek operation for motor */
+void onResolution(); /* Set resolution settings */
+void onActiveSettings(); /* Get active settings */
+void onPing(); /* Ping command handler */
 
-void attachCommandCallbacks();
-void _checkJS(uint8_t motorID);
-void OnUnknownCommand();
-void onRequestMotorStatus();
-void onRequestStallStatus();
-void onRequestSetPosNoMove();
-void onSetSlowFastJSMotion();
-void onSetJSMirrorMode();
-void onGetXactual();
-void onGetVelocity();
-void onGetAcceleration();
-void onGetDeceleration();
-void onGetPower();
-void onConstantForward();
-void onConstantBackward();
-void onMovePosition();
-void onMoveForward();
-void onMoveBackward();
-void onVelocity();
-void onAcceleration();
-void onDeceleration();
-void onPower();
-void onDirection();
-void onJSEnable();
-void onJSDisable();
-void onMotorStop();
-void onMotorHome();
-void onSeek();
-void onResolution();
-void onActiveSettings();
-void onPing();
+/***************************************************************************************************
+ * FUNCTION DEFINITIONS
+ **************************************************************************************************/
 
-// =============== Arduino Functions and Calls ===============
-
-void System_Control_App :: Init()
+/***********************************************************************************************//**
+ * @details     Initialize joystick and motor control pins, SPI, and motor controller.
+ **************************************************************************************************/
+void System_Control_App :: Init(void)
 {
-	// =============== Setup Motor Control ===============
+    /* =============== Setup Motor Control =============== */
 
-	// Configure enable and Chip Select Pins for alll motors
-	pinMode(MTR_CS0, OUTPUT);
-	pinMode(MTR_CS1, OUTPUT);
-	pinMode(MTR_CS2, OUTPUT);
-	pinMode(MTR_ENA_0, OUTPUT);
-	pinMode(MTR_ENA_1, OUTPUT);
-	pinMode(MTR_ENA_2, OUTPUT);
+    /* Configure enable and Chip Select pins for all motors */
+    pinMode(MTR_CS0, OUTPUT);
+    pinMode(MTR_CS1, OUTPUT);
+    pinMode(MTR_CS2, OUTPUT);
+    pinMode(MTR_ENA_0, OUTPUT);
+    pinMode(MTR_ENA_1, OUTPUT);
+    pinMode(MTR_ENA_2, OUTPUT);
+    
+    /* enable all, but motor 3 on startup */
+    digitalWrite(MTR_ENA_0, 0);
+    digitalWrite(MTR_ENA_1, 0);
+    digitalWrite(MTR_ENA_2, 1);
+    
+    /* Configure joystick stop switch */
+    pinMode(JS_STOP_SWTICH, INPUT);
+
+	Serial.begin(115200); /* Initialize serial communication */
+    Serial.println("starting the coolest project in the history of mankind");
 	
-	digitalWrite(MTR_ENA_0, 0);
-	digitalWrite(MTR_ENA_1, 0);
-	digitalWrite(MTR_ENA_2, 0);
-	
+    /* Initialize SPI interface with appropriate settings */
+    SPI.setBitOrder(MSBFIRST);
+    SPI.setClockDivider(SPI_CLOCK_DIV8);
+    SPI.setDataMode(SPI_MODE3);
+    SPI.begin();
 
-	// Configure joystick stop switch
-	pinMode(JS_STOP_SWTICH, INPUT);
+    /* =============== Initialize Objects =============== */
 
-	// initialize the SPI interface with TMC5130 settings
-	SPI.setBitOrder(MSBFIRST);
-	SPI.setClockDivider(SPI_CLOCK_DIV8);
-	SPI.setDataMode(SPI_MODE3);
-	SPI.begin();
+    /* Initialize motor and sensor control objects*/ 
+    control.begin();
 
-	// =============== Setup Board Configuration and Sensors ===============
-
-	Serial.begin(115200);
-	Serial.println("starting the coolest project in the history of mankind");
-
-	// =============== Initialize Objects ===============
-
-	// Initialize the motor and Sensor objects
-	control.begin();
-
-	outputStr.reserve(128); /*reserve output string for a max of 128 characters*/
-	cmdMessenger.printLfCr();
-	attachCommandCallbacks();	
+    /* Reserve memory for output string */ 
+    outputStr.reserve(128);
+    
+    /* Ensure proper line endings for serial communication */ 
+    cmdMessenger.printLfCr();
+    
+    /* Attach command callbacks for serial communication */ 
+    attachCommandCallbacks();    
 }
 
-void System_Control_App :: ServiceSystemResponseApp()
+/***********************************************************************************************//**
+ * @details     Service incoming serial messages and handle motor control logic.
+ **************************************************************************************************/
+void System_Control_App :: ServiceSystemResponseApp(void)
 {
+    /* Process incoming serial messages */ 
+    cmdMessenger.feedinSerialData();
 
-	// 20 us
-	cmdMessenger.feedinSerialData(); /* Process incoming messages */
+    /*  Enable joystick control if the flag is set */ 
+    if (motorFlags[0].isJSEnable)
+    {
+        control.enableJoystick();
+    }
 
-	// 100 us
-	if (motorFlags[0].isJSEnable)
-	{
-		control.enableJoystick();
-	}
+    // Loop through all motors and process their status
+    for (uint8_t motor = 0; motor < 3; motor++)
+    {
+        /* Handle seek operation for motors*/
+        if (motorFlags[motor].isSeeking)
+        {
+            motorFlags[motor].isSeeking = !control.seek(motor, motorFlags[motor].direction);
+        }
 
-	for (uint8_t motor = 0; motor < 3; motor++)
-	{
-		// 12 us
-		if (motorFlags[motor].isSeeking)
-		{
-			motorFlags[motor].isSeeking = !control.seek(motor, motorFlags[motor].direction);
-		}
-
-		// 50 us
-		if (motorFlags[motor].isPositioning)
-		{
-			motorFlags[motor].isPositioning = !control.standstill(motor);
-		}
-	}
-
+        /* Handle positioning completion for  */
+        if (motorFlags[motor].isPositioning)
+        {
+            motorFlags[motor].isPositioning = !control.standstill(motor);
+        }
+    }
 }
 
+/***********************************************************************************************//**
+ * @details     Checks velocity to confirm motor 3 has stopped before disabling it.
+ **************************************************************************************************/
+void System_Control_App :: ServiceMotor3PowerDisable(void)
+{
+    unsigned long velocity = 0;
+    
+    /* Get current velocity of motor 3*/
+    velocity = control.getVelocity(2);
+
+    /* If motor 3 is moving at very low speed, but hasn't stopped, stop it.*/
+    if ((velocity < 160) && (velocity != 0))
+    {
+        control.stop(2); /*stop motor 3*/
+    }
+}
+
+/***********************************************************************************************//**
+ * @details     Collects motor status information bits
+ **************************************************************************************************/
 uint32_t  System_Control_App :: RequestMotorStatus(uint8_t target_motor)
 {
 	uint32_t motorStat=0;
@@ -143,11 +195,9 @@ uint32_t  System_Control_App :: RequestMotorStatus(uint8_t target_motor)
 void attachCommandCallbacks()
 {
 	cmdMessenger.attach(OnUnknownCommand); // Reply: e,
-
 	cmdMessenger.attach(REQUEST_MOTOR_STATUS, onRequestMotorStatus); // Reply: m,
 	cmdMessenger.attach(REQUEST_SG_STATUS, onRequestStallStatus);	 // Reply: g,
 	cmdMessenger.attach(REQUEST_POS_NO_MOVE, onRequestSetPosNoMove); // Reply: d,
-
 	cmdMessenger.attach(SET_JS_SLOW_FAST, onSetSlowFastJSMotion); // Reply: A,
 	cmdMessenger.attach(SET_JS_MIRROR_MODE, onSetJSMirrorMode);	  // Reply: V,
 	cmdMessenger.attach(GET_XACTUAL, onGetXactual);				  // Reply: x,
@@ -155,6 +205,7 @@ void attachCommandCallbacks()
 	cmdMessenger.attach(GET_ACCELERATION, onGetAcceleration);	  // Reply: a,
 	cmdMessenger.attach(GET_DECELERATION, onGetDeceleration);	  // Reply: d,
 	cmdMessenger.attach(GET_POWER, onGetPower);					  // Reply: P,
+	cmdMessenger.attach(GET_IMU_AVE_DATA, onGetIMUData); 		// Reply: i;
 
 	cmdMessenger.attach(SET_CONST_FW, onConstantForward);  // Reply: S,1;
 	cmdMessenger.attach(SET_CONST_BW, onConstantBackward); // Reply: S,1;
@@ -175,13 +226,12 @@ void attachCommandCallbacks()
 	cmdMessenger.attach(RESOLUTION, onResolution);		   // Reply: S,1;
 	cmdMessenger.attach(ACTIVESETTINGS, onActiveSettings); // Reply: S,1;
 	cmdMessenger.attach(PCPING, onPing);				   // Reply: p,PONG;
+	
 }
 
 // ADD IF SWITCHES ARE HIT DURING GO TO SPECIFIC POSITION, THEN STOP RATHER THAN CONTINUEING ON
 
 // =============== Additional Helper Functions ===============
-
-
 
 bool hasExpired(unsigned long &prevTime, unsigned long interval)
 {
@@ -400,6 +450,27 @@ void onGetPower()
 	outputStr.concat(F(","));
 
 	outputStr.concat(control.getPower(target_motor));
+
+	outputStr.concat(F(";"));
+	Serial.println(outputStr);
+}
+
+// Format : outputStr = "i,IMU data;"
+void onGetIMUData()
+{
+	char hex_string[11]; // Enough space for "0x" + 8 hex digits + null terminator
+
+	outputStr.remove(0);
+	outputStr.concat(F("i,"));
+	outputStr.concat(millis());
+	outputStr.concat(F(","));
+
+	for (uint8_t e = 0; e < 6; e++ )
+	{
+		sprintf(hex_string, "0x%X", AveragedIMUdata[e].i); /*Convert the hex value to a string*/
+		outputStr.concat(hex_string);
+		outputStr.concat(F(","));
+	}
 
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
@@ -743,3 +814,5 @@ void onPing()
 {
 	Serial.println(F("p,PONG;"));
 }
+
+
