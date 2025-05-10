@@ -31,6 +31,7 @@ CombinedControl control; // Object for managing motor and joystick control
 flags motorFlags[3]; // Flags for motor status tracking
 int status[25]; // Array for storing system status data
 extern union floatUnion AveragedIMUdata[6];
+extern uint32_t IMU_Comm_Errors;
 
 /***************************************************************************************************
  * PRIVATE FUNCTION PROTOTYPES
@@ -94,7 +95,9 @@ void System_Control_App :: Init(void)
     digitalWrite(MTR_ENA_2, 1);
     
     /* Configure joystick stop switch */
-    pinMode(JS_STOP_SWTICH, INPUT);
+	PIOB->PIO_PER=(1<<27); //Enable PIO for GPIO P13
+	PIOB->PIO_OER=(1<<27); //Enable port pin for output P13
+    pinMode(JS_STOP_SWTICH, INPUT_PULLUP);
 
 	Serial.begin(115200); /* Initialize serial communication */
     Serial.println("starting the coolest project in the history of mankind");
@@ -188,6 +191,14 @@ uint32_t  System_Control_App :: RequestMotorStatus(uint8_t target_motor)
 	Serial.println(outputStr);
 
 	return motorStat;
+}
+
+/***********************************************************************************************//**
+ * @details     Toggle joystick control mode
+ **************************************************************************************************/
+void ToggleJSmtrlControlMode(void)
+{
+	control.SetJSControlMode(!control.GetJSControlMode());
 }
 
 // =============== Command Callbacks ===============
@@ -472,6 +483,7 @@ void onGetIMUData()
 		outputStr.concat(F(","));
 	}
 
+	outputStr.concat(IMU_Comm_Errors);
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
 }

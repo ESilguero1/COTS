@@ -17,7 +17,7 @@
 /***************************************************************************************************
  * CONSTANTS AND DEFINITIONS
  **************************************************************************************************/
-
+#define JS_SWITCH_CHK (200)
 /***************************************************************************************************
  * PUBLIC FUNCTION PROTOTYPES
  **************************************************************************************************/
@@ -29,6 +29,7 @@ class System_Control_App
             void ServiceSystemResponseApp(void);
             void ServiceMotor3PowerDisable(void);
             uint32_t RequestMotorStatus(uint8_t target_motor);
+            void ToggleJSmtrlControlMode(void);
 };
 
 #endif

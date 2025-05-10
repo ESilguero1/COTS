@@ -350,6 +350,7 @@ uint16_t BNO080::parseInputReport(void)
 	}
 	else if (shtpData[5] == SENSOR_REPORTID_ROTATION_VECTOR ||
 		shtpData[5] == SENSOR_REPORTID_GAME_ROTATION_VECTOR ||
+		shtpData[5] == SENSOR_REPORTID_GEOMAGNETIC_ROTATION_VECTOR ||
 		shtpData[5] == SENSOR_REPORTID_AR_VR_STABILIZED_ROTATION_VECTOR ||
 		shtpData[5] == SENSOR_REPORTID_AR_VR_STABILIZED_GAME_ROTATION_VECTOR)
 	{
@@ -1208,6 +1209,11 @@ void BNO080::enableARVRStabilizedRotationVector(uint16_t timeBetweenReports)
 void BNO080::enableGameRotationVector(uint16_t timeBetweenReports)
 {
 	setFeatureCommand(SENSOR_REPORTID_GAME_ROTATION_VECTOR, timeBetweenReports);
+}
+//Sends the packet to enable the Geomagnetic rotation vector
+void BNO080::enableGeomagneticRotationVector(uint16_t timeBetweenReports)
+{
+	setFeatureCommand(SENSOR_REPORTID_GEOMAGNETIC_ROTATION_VECTOR, timeBetweenReports);
 }
 
 //Sends the packet to enable the ar/vr stabilized rotation vector

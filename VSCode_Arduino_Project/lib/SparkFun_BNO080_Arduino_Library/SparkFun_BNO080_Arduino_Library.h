@@ -34,8 +34,7 @@
 #include <SPI.h>
 
 //The default I2C address for the BNO080 on the SparkX breakout is 0x4B. 0x4A is also possible.
-#define BNO080_DEFAULT_ADDRESS 0x4A
-#define BNO080_DEFAULT_ADDRESS_2 0x4B
+#define BNO080_DEFAULT_ADDRESS 0x4B
 
 //Platform specific configurations
 
@@ -167,6 +166,7 @@ public:
 
 	void enableRotationVector(uint16_t timeBetweenReports);
 	void enableGameRotationVector(uint16_t timeBetweenReports);
+	void enableGeomagneticRotationVector(uint16_t timeBetweenReports);
 	void enableARVRStabilizedRotationVector(uint16_t timeBetweenReports);
 	void enableARVRStabilizedGameRotationVector(uint16_t timeBetweenReports);
 	void enableAccelerometer(uint16_t timeBetweenReports);

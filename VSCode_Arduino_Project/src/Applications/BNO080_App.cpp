@@ -14,6 +14,7 @@
 #include <Wire.h>
 #include "SparkFun_BNO080_Arduino_Library.h" /* Click here to get the library: http://librarymanager/All#SparkFun_BNO080 */
 #include "System_definitions.h"
+#include "Arduino.h"
 
 /***************************************************************************************************
  * CONSTANTS AND DEFINITIONS
@@ -29,11 +30,14 @@ float IMU_Filtered_Data[IMU_DATA_SET][SAMPLES_TO_AVERAGE]; /* Buffer for storing
 float IMU_Data[IMU_DATA_SET];         /* Stores the latest IMU data */
 uint8_t DataSampleCount= 0;           /* Counter for averaging samples */
 union floatUnion AveragedIMUdata[IMU_DATA_SET]; /* Averaged IMU data to be communicated to external interfaces */
+uint32_t IMU_Comm_Errors = 0;
+uint32_t IMU_NoDataCounter = 0;
 
 /***************************************************************************************************
  * PRIVATE FUNCTION PROTOTYPES
  **************************************************************************************************/
 void AverageIMUdata(void); /* Function prototype for filtering IMU data */
+float ConverToPolarCoordinates(float neg_pos_degrees);
 
 /***************************************************************************************************
  * FUNCTION DEFINITIONS
@@ -50,14 +54,12 @@ uint8_t BNO080_App :: Init(void)
   pinMode(I2C_SDA, INPUT);
   pinMode(I2C_SCL, OUTPUT);
   digitalWrite(I2C_SCL, 0); 
-  
 
 /* Attempt to initialize IMU */
   Wire.begin();
-  Wire.setClock(60000);
-  delay(100);
-  Wire.flush();
-  delay(100);
+  Wire.setClock(51000);
+  //Wire.setClock(8000);
+  
   if (mBNO080IMU.begin(BNO080_DEFAULT_ADDRESS) == false)
   {
     initState = 1; /* Initialization failed */
@@ -67,8 +69,11 @@ uint8_t BNO080_App :: Init(void)
   else
   {
     initState = 0; /* Initialization successful */
-    //Wire.setClock(400000); /* Increase I2C speed to 200kHz */
-    mBNO080IMU.enableRotationVector(IMU_DATA_ACQUSITION_PERIOD); /* Configure IMU to send updates every IMU_DATA_ACQUSITION_PERIOD */
+    Wire.setClock(400000); /* Increase I2C speed to 200kHz */
+    //mBNO080IMU.enableRotationVector(IMU_DATA_ACQUSITION_PERIOD); /* Configure IMU to send updates every IMU_DATA_ACQUSITION_PERIOD */
+    mBNO080IMU.enableGeomagneticRotationVector(IMU_DATA_ACQUSITION_PERIOD); /* Configure IMU to send updates every IMU_DATA_ACQUSITION_PERIOD */
+    
+    mBNO080IMU.enableAccelerometer(IMU_DATA_ACQUSITION_PERIOD); 
   }
 
   return initState;
@@ -79,35 +84,52 @@ uint8_t BNO080_App :: Init(void)
  **************************************************************************************************/
 void BNO080_App :: Service_BNO080(void)
 {
+  float roll, pitch, yaw = 0.0f;
+  float AccelX,  AccelY = 0.0f, AccelZ = 0.0f;
+
   /* Check if new IMU data is available */
   if (mBNO080IMU.dataAvailable() == true)
   {
+    IMU_NoDataCounter = 0;
     /* Read orientation data from IMU (roll, pitch, yaw in degrees) */
-    float roll = (mBNO080IMU.getRoll()) * 180.0 / PI;
-    float pitch = (mBNO080IMU.getPitch()) * 180.0 / PI;
-    float yaw = (mBNO080IMU.getYaw()) * 180.0 / PI;
-
-    /* Store orientation data, which is dependent on the orientation of the assembly installation */
-    IMU_Data[0] = roll;
-    IMU_Data[2] = pitch; /* indeces swapped on purpose to match assembly installation*/
-    IMU_Data[1] = yaw;
+    roll = (mBNO080IMU.getRoll()) * 180.0 / PI;
+    pitch = (mBNO080IMU.getPitch()) * 180.0 / PI;
+    yaw = (mBNO080IMU.getYaw()) * 180.0 / PI;
+        
+    yaw = ConverToPolarCoordinates(yaw);
 
     /* Read acceleration data from IMU */
-    float x = mBNO080IMU.getAccelX();
-    float y = mBNO080IMU.getAccelY();
-    float z = mBNO080IMU.getAccelZ();
+    AccelX = mBNO080IMU.getAccelX();
+    AccelY = mBNO080IMU.getAccelY();
+    AccelZ = mBNO080IMU.getAccelZ();
 
-    /* Store acceleration data */
-    IMU_Data[3] = x;
-    IMU_Data[5] = y;
-    IMU_Data[4] = z;
+    if ( (isnan(yaw) == false) && (isnan(AccelZ) == false) ) /* Only process if collected data is a valid float */
+    {
+      /* Store orientation data, which is dependent on the orientation of the assembly installation */
+      IMU_Data[0] = roll;
+      IMU_Data[2] = pitch; /* indeces swapped on purpose to match assembly installation*/
+      IMU_Data[1] = yaw;
+      /* Store acceleration data */
+      IMU_Data[3] = AccelX;
+      IMU_Data[5] = AccelY; /* indeces swapped on purpose to match assembly installation*/
+      IMU_Data[4] = AccelZ;
 
-    /* Apply filtering to the collected IMU data */
-    AverageIMUdata();
+      AverageIMUdata(); /* Apply filtering to the collected IMU data */
+    }
+    else
+    {
+      IMU_Comm_Errors++;
+    }
   }
   else
   {
     Wire.flush();
+    IMU_NoDataCounter++;
+
+    if (IMU_NoDataCounter >= 20) /* Missing 2 seconds of consecutive IMU data sets must mean a gross failure */
+    {
+      IMU_Comm_Errors++;
+    }
   }
 }
 
@@ -148,3 +170,11 @@ void AverageIMUdata(void)
   }
 }
 
+
+float ConverToPolarCoordinates(float neg_pos_degrees)
+{
+  if (neg_pos_degrees < 0.0)
+    neg_pos_degrees = 180.0 + (neg_pos_degrees+180.0);
+        
+  return neg_pos_degrees;
+}

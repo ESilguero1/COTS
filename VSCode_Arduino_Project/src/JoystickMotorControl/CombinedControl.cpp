@@ -30,14 +30,13 @@ void CombinedControl :: begin() {
 	_resolutionNum = 1;
 	_mirrorMode = 0;
 	_slow_fast = 0; 
+	_mtr3JSControl = true;
 
-	// Initializing the motor objects and start it at home position
+	// Iniializing the motor objects and start it at home position
 	joystick.begin();
 	motor[0].begin();
   	motor[1].begin();
 	motor[2].begin();
-
-	motor[2].stop();
 	
 	setPower(2,MTR3_HOLD_POWER,MTR3_RUN_POWER);
 	setVelocity(2,STAND_MTR3_VELOCITY);
@@ -85,6 +84,19 @@ void CombinedControl :: enableJoystick()
 {
 	
 	static bool firstRun = false;
+	uint8_t Mtr3CntrlRange[2] = {2,3};
+	uint8_t TwoMtrCntrlRange[2] = {2,3};//{0,2};
+	uint8_t ControlRange[2];
+
+	if (_mtr3JSControl == true)
+	{
+		memmove(ControlRange, Mtr3CntrlRange, 2);
+	}
+	else
+	{
+		memmove(ControlRange, TwoMtrCntrlRange, 2);
+	}
+
 
 	if (CombinedControl :: _timer(_lastRead)) 
 	{
@@ -96,13 +108,14 @@ void CombinedControl :: enableJoystick()
 
 		X_Y_AxisVel[0] = joystick.xAxisControl() * fast_slow_multiplier[_slow_fast];// MS: Temporarily slowed down joystick to eliminate backlash
 		X_Y_AxisVel[1] = joystick.yAxisControl() * fast_slow_multiplier[_slow_fast];
-		//X_Y_AxisVel[2] = joystick.yAxisControl() * fast_slow_multiplier[_slow_fast];
-
 		X_Y_AxisVel[2] = (joystick.yAxisControl() + joystick.yAxisControl())/ 2.0;
+
 		if (firstRun == false)
 		{
 			firstRun = true;
-			_lastX_Y_vel[2] = X_Y_AxisVel[2];
+			_lastX_Y_vel[0] = (joystick.xAxisControl() + joystick.xAxisControl()+ joystick.xAxisControl()+ joystick.xAxisControl())/ 4.0;
+			_lastX_Y_vel[1] = (joystick.yAxisControl() + joystick.yAxisControl()+ joystick.yAxisControl()+ joystick.yAxisControl())/ 4.0;
+			_lastX_Y_vel[2] = (joystick.yAxisControl() + joystick.yAxisControl()+ joystick.yAxisControl()+ joystick.yAxisControl())/ 4.0;
 		}
 	
 		if (_mirrorMode == 1)
@@ -117,7 +130,7 @@ void CombinedControl :: enableJoystick()
 			Serial.print("X_AxisVel: ");
 			Serial.println(X_Y_AxisVel[1]);
 		#endif
-		for (uint8_t axis = 2; axis < 3; axis++)
+		for (uint8_t axis = ControlRange[0]; axis < ControlRange[1]; axis++)
 		{
 			// check the direction of the velocity and past velocity
 			if ( (_lastX_Y_vel[axis] >= 0) ^ (X_Y_AxisVel[axis] < 0) ) 
@@ -570,4 +583,14 @@ void CombinedControl :: SetSlowFastJoyStick(uint8_t slow_fast)
 void CombinedControl :: SetMirrorMode(uint8_t mirror_mode ) 
 {
       _mirrorMode = mirror_mode;
+}
+
+void CombinedControl :: SetJSControlMode(uint8_t js_cntrl_mode ) 
+{
+	_mtr3JSControl = js_cntrl_mode;
+}
+
+uint8_t CombinedControl :: GetJSControlMode(void) 
+{
+	return _mtr3JSControl;
 }

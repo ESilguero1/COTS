@@ -19,7 +19,30 @@ def hex_to_float(hex_string):
         return f"Error: Could not unpack hex data - {e}"
     
 
+def ConverToPolarCoordinates(neg_pos_degrees):
+    if neg_pos_degrees < 0.0:
+        neg_pos_degrees = 360 + neg_pos_degrees
+        
+    return neg_pos_degrees
 
+def WrapPolarCoordinatesAround(degrees):
+    if degrees >= 360.0:
+        degrees -= 360.0
+        
+    return degrees
+    
 IntValue = "0"
 
 print (hex_to_float(IntValue))
+
+PolarOffsetDegrees = 0 # IMU is mounted 180 degrees off
+PolarDegreesMeasurement = ConverToPolarCoordinates(-30)
+
+if (PolarDegreesMeasurement > PolarOffsetDegrees):
+    PolarDegreesMeasurement = WrapPolarCoordinatesAround(PolarDegreesMeasurement-PolarOffsetDegrees)
+else:
+    PolarDegreesMeasurement = WrapPolarCoordinatesAround(PolarOffsetDegrees-PolarDegreesMeasurement)
+    
+print (WrapPolarCoordinatesAround(PolarDegreesMeasurement))
+        
+        

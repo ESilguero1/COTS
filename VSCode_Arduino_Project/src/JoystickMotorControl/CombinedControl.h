@@ -76,6 +76,8 @@ class CombinedControl {
       void switchActiveEnable(uint8_t motor_id, bool fw, bool bw);                           // allows the user to change switches active high or low
       void SetSlowFastJoyStick(uint8_t slow_fast);
       void SetMirrorMode(uint8_t mirror_mode ) ;
+      void SetJSControlMode(uint8_t js_cntrl_mode) ;
+      uint8_t GetJSControlMode(void) ;
 
    private:
       MotorControl motor[3];
@@ -88,6 +90,7 @@ class CombinedControl {
       unsigned long _lastRead;
       bool _mirrorMode;
       bool _slow_fast;
+      bool _mtr3JSControl;
 
 
       void _setJS(uint8_t motor_id, double velocity);

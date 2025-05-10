@@ -40,23 +40,24 @@ uint8_t SystemInitState = 0; /* Tracks initialization status of the system */
 void Mtr3PowerDisableCheck(void);   /* Checks if motor 3 should be powered down */
 void ServiceIMUapp(void);           /* Handles periodic IMU data servicing */
 void ServiceLEDapp(void);           /* Handles periodic LED service */
+void ServiceJSswitch(void);
 
 /***********************************************************************************************//**
  * @details     Setup for main program. Initialize all subsystems and report any failures
  **************************************************************************************************/
 void setup()
 {
-    LEDApp.Init();
     pinMode(MTR_ENA_2, OUTPUT);
-    /* enable all, but motor 3 on startup */
-    digitalWrite(MTR_ENA_2, 1);
+    digitalWrite(MTR_ENA_2, HIGH);
+    
+    LEDApp.Init();
 
-    if (BNO080App.Init() != 0) /* Initialize BNO080 IMU module */
+    if (BNO080App.Init() != 0)              /* Initialize BNO080 IMU module */
     {
         SystemInitState |= (1 << INIT_BNO80_STAT_FAILED);
     }
 
-    SystemControlApp.Init(); /* Initialize system control */
+    SystemControlApp.Init();                /* Initialize system control */
 
     /* Check motor initialization status and set failure flags if needed */
     if (SystemControlApp.RequestMotorStatus(0) != MOTOR_OK_STATUS[0])
@@ -76,16 +77,19 @@ void setup()
     // {
     //     SystemInitState |= (1 << INIT_BLE_STAT_FAILED);
     // }
+
     /* enable all, but motor 3 on startup */
+    digitalWrite(MTR_ENA_0, 0);
+    digitalWrite(MTR_ENA_1, 0);
     digitalWrite(MTR_ENA_2, 1);
 
-    LEDApp.Set_LED_Code(SystemInitState);/* Enunciate system intialization state*/
+    LEDApp.Set_LED_Code(SystemInitState);                           /* Enunciate system intialization state*/
 
     /* Schedule periodic tasks for motor power check and IMU servicing */
     asyncTask.repeat(Mtr3PowerDisableCheck, 1000);                  /* Check motor power every second */
     asyncTask.repeat(ServiceIMUapp, IMU_DATA_ACQUSITION_PERIOD);    /* Service IMU periodically */
     asyncTask.repeat(ServiceLEDapp, LED_FREQ_RATE_HZ);              /* Service LED periodically */
-    
+    asyncTask.repeat(ServiceJSswitch, JS_SWITCH_CHK);              /* Service JS swtich periodically */
 }
 
 /***********************************************************************************************//**
@@ -93,9 +97,9 @@ void setup()
  **************************************************************************************************/
 void loop()
 {
-    SystemControlApp.ServiceSystemResponseApp(); /* Process system responses */
-    BLE_App.Service_BLE_UART();                  /* Handle BLE communication */
-    asyncTask.loop();                            /* Execute scheduled tasks */
+    SystemControlApp.ServiceSystemResponseApp();        /* Process system responses */
+    BLE_App.Service_BLE_UART();                         /* Handle BLE communication */
+    asyncTask.loop();                                   /* Execute other async scheduled tasks */
 }
 
 /***********************************************************************************************//**
@@ -112,7 +116,7 @@ void Mtr3PowerDisableCheck(void)
  **************************************************************************************************/
 void ServiceIMUapp(void)
 {
-    if ((SystemInitState & (1 << INIT_BNO80_STAT_FAILED)) == 0 ) /*ONly run if i)nit passed for device*/
+    if ((SystemInitState & (1 << INIT_BNO80_STAT_FAILED)) == 0 ) /*ONly run if init passed for device*/
     {
         BNO080App.Service_BNO080();	
     }
@@ -124,4 +128,22 @@ void ServiceIMUapp(void)
 void ServiceLEDapp(void)
 {
     LEDApp.Service_LED();
+}
+
+/***********************************************************************************************//**
+ * @details     Service Joystick mode switch debouncing every JS_SWITCH_CHK ms
+ *  The the jostick mode determines if the joystick controls motor 3 only or ignores motor 3
+ * and services motors 1 & 2
+ **************************************************************************************************/
+void ServiceJSswitch(void)
+{
+    static int lastJSstate = HIGH;
+    int JSstate = PIOB->PIO_PDSR & PIO_PDSR_P27;
+
+    if ((lastJSstate == LOW) & (JSstate = LOW))
+    {
+        SystemControlApp.ToggleJSmtrlControlMode();
+    }
+    lastJSstate = JSstate;
+
 }

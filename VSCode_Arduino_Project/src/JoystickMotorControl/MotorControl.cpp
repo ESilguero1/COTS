@@ -282,7 +282,7 @@ void MotorControl :: set(byte csPin, byte enablePin, int ID) {
 void MotorControl :: begin() {
 
 	digitalWrite(_csPin, HIGH);
-	digitalWrite(_enablePin, HIGH);
+	//digitalWrite(_enablePin, HIGH);
 	delay(3);
 
 	// Turn on the enable pin to talk to the motor
