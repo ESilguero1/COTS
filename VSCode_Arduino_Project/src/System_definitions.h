@@ -38,7 +38,7 @@
  //#define DEBUG_MOTOR  0
  // #define DEBUG_HOME 0
  //#define DEBUG_DIR   1
- // #define DEBUG_COM0
+// #define DEBUG_COM
  // Additional constants
  #define STAND_MTR_VELOCITY 	  (50000)
  #define STAND_MTR3_VELOCITY    (250)
@@ -69,9 +69,9 @@ typedef enum
 } SystemInitState_e;
 
 #if (DEBUG == 1) /* Define different values for runtime vs debug. Debug sessions causes status info to return unexpected values*/
-  const unsigned int MOTOR_OK_STATUS[3] = {16777215, 16777183, 6220251};
+  const unsigned int MOTOR_OK_STATUS[3] = {12587092, 12587092, 12587028};
 #else
-  const unsigned int MOTOR_OK_STATUS[3] = {12582996, 12582996, 12587028};
+  const unsigned int MOTOR_OK_STATUS[3] = {13111380, 13111380, 13111316};
 #endif
 
 #endif

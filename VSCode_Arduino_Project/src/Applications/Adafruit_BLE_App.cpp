@@ -87,10 +87,14 @@ uint8_t Adafruit_BLE_App :: Init()
 		ble.verbose(false);
 
 		/* Wait for BLE connection */
-		for (uint8_t dls = 0; dls < 10; dls++)
+		for (uint8_t dls = 0; dls < 80; dls++)
 		{
-			delay(100);
+			delay(250);
 			digitalWrite(SYS_LED, !digitalRead(SYS_LED));
+			if (ble.isConnected())
+			{
+				break;
+			}
 		}
 
 		if (ble.isConnected())

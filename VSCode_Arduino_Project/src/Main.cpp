@@ -73,15 +73,15 @@ void setup()
         SystemInitState |= (1 << INIT_MOTOR3_STAT_FAILED);
     }
 
-    // if (BLE_App.Init() != 0) /* Initialize Bluetooth Low Energy (BLE) module */
-    // {
-    //     SystemInitState |= (1 << INIT_BLE_STAT_FAILED);
-    // }
+    //if (BLE_App.Init() != 0) /* Initialize Bluetooth Low Energy (BLE) module */
+    //{
+     //   SystemInitState |= (1 << INIT_BLE_STAT_FAILED);
+    //}
 
     /* enable all, but motor 3 on startup */
-    digitalWrite(MTR_ENA_0, 0);
-    digitalWrite(MTR_ENA_1, 0);
-    digitalWrite(MTR_ENA_2, 1);
+    digitalWrite(MTR_ENA_0, LOW);
+    digitalWrite(MTR_ENA_1, LOW);
+    digitalWrite(MTR_ENA_2, HIGH);
 
     LEDApp.Set_LED_Code(SystemInitState);                           /* Enunciate system intialization state*/
 
@@ -89,7 +89,7 @@ void setup()
     asyncTask.repeat(Mtr3PowerDisableCheck, 1000);                  /* Check motor power every second */
     asyncTask.repeat(ServiceIMUapp, IMU_DATA_ACQUSITION_PERIOD);    /* Service IMU periodically */
     asyncTask.repeat(ServiceLEDapp, LED_FREQ_RATE_HZ);              /* Service LED periodically */
-    asyncTask.repeat(ServiceJSswitch, JS_SWITCH_CHK);              /* Service JS swtich periodically */
+    //asyncTask.repeat(ServiceJSswitch, JS_SWITCH_CHK);              /* Service JS swtich periodically */
 }
 
 /***********************************************************************************************//**

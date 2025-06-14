@@ -42,7 +42,7 @@ void CombinedControl :: begin() {
 	setVelocity(2,STAND_MTR3_VELOCITY);
 	setAcceleration(2, MTR3_ACCELERATION);
 	
-
+#ifdef DEBUG_COM
 	// Print out motor data to confirm proper results
 	Serial.print(motor[0].getMotorID());
 	Serial.print(F(" : Motor 1 Data: "));
@@ -56,6 +56,8 @@ void CombinedControl :: begin() {
 	Serial.print(F(" : Motor 3 Data: "));
 	motor[2].getMotorData();
 	Serial.flush();
+#endif
+
 }
 
 //====================================================================================

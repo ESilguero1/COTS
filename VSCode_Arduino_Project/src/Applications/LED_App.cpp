@@ -100,7 +100,7 @@ void LED_App :: Service_LED(void)
 void LED_App :: Set_LED_Code(uint8_t led_code)
 {
     SetLedCode = led_code;
-    Serial.print("led_code: 0x");
+    Serial.print("led_code VAL: 0x");
     Serial.println(led_code, HEX);
 }
 

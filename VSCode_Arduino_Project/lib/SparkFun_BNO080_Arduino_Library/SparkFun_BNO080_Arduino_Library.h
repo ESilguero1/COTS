@@ -34,7 +34,7 @@
 #include <SPI.h>
 
 //The default I2C address for the BNO080 on the SparkX breakout is 0x4B. 0x4A is also possible.
-#define BNO080_DEFAULT_ADDRESS 0x4B
+#define BNO080_DEFAULT_ADDRESS 0x4A
 
 //Platform specific configurations
 

@@ -53,17 +53,17 @@ uint8_t BNO080_App :: Init(void)
   /* Configure I2C pins */
   pinMode(I2C_SDA, INPUT);
   pinMode(I2C_SCL, OUTPUT);
-  digitalWrite(I2C_SCL, 0); 
+  digitalWrite(I2C_SCL, LOW); 
 
 /* Attempt to initialize IMU */
+  delay(350);
   Wire.begin();
-  Wire.setClock(51000);
+  Wire.setClock(50000);
   //Wire.setClock(8000);
   
-  if (mBNO080IMU.begin(BNO080_DEFAULT_ADDRESS) == false)
+  if (mBNO080IMU.begin(BNO080_DEFAULT_ADDRESS, Wire) == false)
   {
     initState = 1; /* Initialization failed */
-    Serial.println(F("BNO080 not detected at default I2C address. Check your jumpers and the hookup guide."));
     Wire.end();
   }
   else
@@ -74,6 +74,13 @@ uint8_t BNO080_App :: Init(void)
     mBNO080IMU.enableGeomagneticRotationVector(IMU_DATA_ACQUSITION_PERIOD); /* Configure IMU to send updates every IMU_DATA_ACQUSITION_PERIOD */
     
     mBNO080IMU.enableAccelerometer(IMU_DATA_ACQUSITION_PERIOD); 
+
+    for (int t = 0; t < 20; t++)
+    {
+      delay(IMU_DATA_ACQUSITION_PERIOD);
+      Service_BNO080();
+    }
+    
   }
 
   return initState;
@@ -107,12 +114,12 @@ void BNO080_App :: Service_BNO080(void)
     {
       /* Store orientation data, which is dependent on the orientation of the assembly installation */
       IMU_Data[0] = roll;
-      IMU_Data[2] = pitch; /* indeces swapped on purpose to match assembly installation*/
-      IMU_Data[1] = yaw;
+      IMU_Data[1] = pitch; 
+      IMU_Data[2] = yaw;
       /* Store acceleration data */
       IMU_Data[3] = AccelX;
-      IMU_Data[5] = AccelY; /* indeces swapped on purpose to match assembly installation*/
-      IMU_Data[4] = AccelZ;
+      IMU_Data[4] = AccelY; 
+      IMU_Data[5] = AccelZ;
 
       AverageIMUdata(); /* Apply filtering to the collected IMU data */
     }
