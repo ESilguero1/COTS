@@ -31,7 +31,7 @@ arduino = serial.Serial(port='COM3', baudrate=115200, timeout=.2)
 
 #PosAdjustment = 0.01
 
-PosAdjustment = 0.01
+PosAdjustment = 0.02
 OffsetAltitude = 0
 OffsettAzimuth = 0
 
@@ -251,10 +251,10 @@ arduino.flushInput()
 ##    time.sleep(0.1)
 ##    print(".", end="")
 ##    
-##arduino.flushInput()
+arduino.flushInput()
 ##
-#arduino.write(str.encode("20,0;")) # SET_JS_SLOW_FAST
-#arduino.write(str.encode("21,0;")) # SET_JS_MIRROR_MODE
+arduino.write(str.encode("20,0;")) # SET_JS_SLOW_FAST
+arduino.write(str.encode("21,0;")) # SET_JS_MIRROR_MODE
 ##
 ##
 ##
@@ -320,119 +320,130 @@ if 1:
             #print()
             first = True
             arduino.flushInput()
-            KeyInput = input("")
+            if keyboard.is_pressed("h"):
+                print("Re-centering motors. Please wait...")
+                go_home()
+                KeyInput = input("Press Enter")
+                
+            elif keyboard.is_pressed("f"):
+                fast = True
+                print("Switching to fast mode...")
+                arduino.write(str.encode("20,1;"))
+                KeyInput = input("Press Enter")
+             
+            elif keyboard.is_pressed("s"):
+                fast = False
+                print("Switching to slow mode...")
+                arduino.write(str.encode("20,0;"))
+                KeyInput = input("Press Enter")
+               
+            elif keyboard.is_pressed("m"):
+                mirror = True
+                print("Enabling mirror mode...")
+                arduino.write(str.encode("21,1;"))
+                KeyInput = input("Press Enter")
+
+            elif keyboard.is_pressed("n"):
+                mirror = False
+                print("Disabling mirror mode...")
+                arduino.write(str.encode("21,0;"))
+                KeyInput = input("Press Enter")
+                
+            elif keyboard.is_pressed("e"):
+                print("Exiting program.") 
+                
+                break
             
-            match KeyInput:
+            elif keyboard.is_pressed("a"):
+                arduino.write(str.encode("41;")) # disable joystick during Scan
+                if TargetObject != "":
+                    print("Scanning for " + TargetObject   + " (press backspace to stop Scan)...")
+                    Scan_For_Object()
+
+                else:
+                    print("PLease go to a planet first")
+                KeyInput = input("Press Enter")
+                    
+            elif keyboard.is_pressed("t"):
+                arduino.write(str.encode("41;")) # disable joystick during tracking
+                if TargetObject != "":
+                    print("Tracking " + TargetObject   + " (press backspace to stop tracking)...")
+                    track_object(TargetObject)
+                    #tracking_thread = threading.Thread(target=track_object, args=(TargetObject,))
+                    #tracking_thread.start()
+                    #tracking_thread.join()
+                    #break
+                else:
+                    print("PLease go to a planet first")
                 
-                case "h":
-                    print("Re-centering motors. Please wait...")
-                    go_home()
-                case "f":
-                    fast = True
-                    print("Switching to fast mode...")
-                    arduino.write(str.encode("20,1;"))
-                 
-                case "s":
-                    fast = False
-                    print("Switching to slow mode...")
-                    arduino.write(str.encode("20,0;"))
-                   
-                case "m":
-                    mirror = True
-                    print("Enabling mirror mode...")
-                    arduino.write(str.encode("21,1;"))
-
-                case "n":
-                    mirror = False
-                    print("Disabling mirror mode...")
-                    arduino.write(str.encode("21,0;"))
-                    
-                case "e":
-                    print("Exiting program.") 
-                    break
+                KeyInput = input("Press Enter")
                 
-                case "a":
-                    arduino.write(str.encode("41;")) # disable joystick during Scan
-                    if TargetObject != "":
-                        print("Scanning for " + TargetObject   + " (press backspace to stop Scan)...")
-                        Scan_For_Object()
+            
+            elif keyboard.is_pressed("g"):
+                keyboard.press('backspace')
+                print ('Select from this list', Objects)
+                print('Zero indexed')
 
-                    else:
-                        print("PLease go to a planet first")
-                        
-                case "t":
-                    arduino.write(str.encode("41;")) # disable joystick during tracking
-                    if TargetObject != "":
-                        print("Tracking " + TargetObject   + " (press backspace to stop tracking)...")
-                        track_object(TargetObject)
-                        #tracking_thread = threading.Thread(target=track_object, args=(TargetObject,))
-                        #tracking_thread.start()
-                        #tracking_thread.join()
-                        #break
-                    else:
-                        print("PLease go to a planet first")
+                ObjectQuery = input("")
                 
-                case "g":
-                    keyboard.press('backspace')
-                    print ('Select from this list', Objects)
-                    print('Zero indexed')
-
-                    ObjectQuery = input("")
+                if ObjectQuery != "" and len(ObjectQuery) == 1:
+                    TargetObject = (Objects[int(ObjectQuery)])
+                    coords = get_coords(TargetObject)
+                    LastAltitude = coords[0]+OffsetAltitude
+                    CurrentAltitude = LastAltitude
                     
-                    if ObjectQuery != "" and len(ObjectQuery) == 1:
-                        TargetObject = (Objects[int(ObjectQuery)])
-                        coords = get_coords(TargetObject)
-                        LastAltitude = coords[0]+OffsetAltitude
-                        CurrentAltitude = LastAltitude
-                        
-                        LastAzimuth = coords[1]+OffsettAzimuth
-                        CurrentAzimuth = LastAzimuth
-                        go_to(LastAltitude, LastAzimuth)
-                        
-                    print ("ObjectQuery", ObjectQuery)
-                        
-                case "j":
-                    print("Enabled Joystick...")
-                    arduino.write(str.encode("40,1;"))
+                    LastAzimuth = coords[1]+OffsettAzimuth
+                    CurrentAzimuth = LastAzimuth
+                    go_to(LastAltitude, LastAzimuth)
                     
-                case "c":
-                    print(OffsetAltitude, OffsettAzimuth,CurrentAltitude, CurrentAzimuth, LastAltitude, CurrentAzimuth )
-                    if CurrentAltitude != 0:
-                        OffsetAltitude = CurrentAltitude - LastAltitude
-                            
-                    if CurrentAzimuth != 0:   
-                        OffsettAzimuth = CurrentAzimuth - LastAzimuth
-                            
-                    print(OffsetAltitude, OffsettAzimuth)
-
-                case "right":
-                    CurrentAzimuth = CurrentAzimuth+PosAdjustment
-                    send_coords(CurrentAltitude, CurrentAzimuth)
-                    print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
-                case "left":
-                    CurrentAzimuth = CurrentAzimuth-PosAdjustment
-                    send_coords(CurrentAltitude, CurrentAzimuth)
-                    print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
+                print ("ObjectQuery", ObjectQuery)
+                KeyInput = input("Press Enter")
                     
-                case "up":
-                    if mirror == False:
-                        CurrentAltitude = CurrentAltitude+PosAdjustment
-                    else:
-                        CurrentAltitude = CurrentAltitude-PosAdjustment
-                    send_coords(CurrentAltitude, CurrentAzimuth)
-                    print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
-                    
-                case "down":
-
-                    if mirror == False:
-                        CurrentAltitude = CurrentAltitude-PosAdjustment
-                    else:
-                        CurrentAltitude = CurrentAltitude+PosAdjustment
-                        
-                    send_coords(CurrentAltitude, CurrentAzimuth)
-                    print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
+            elif keyboard.is_pressed("j"):
+                print("Enabled Joystick...")
+                arduino.write(str.encode("40,1;"))
+                KeyInput = input("Press Enter")
                 
-            time.sleep(0.1)
+            elif keyboard.is_pressed("c"):
+                print(OffsetAltitude, OffsettAzimuth,CurrentAltitude, CurrentAzimuth, LastAltitude, CurrentAzimuth )
+                if CurrentAltitude != 0:
+                    OffsetAltitude = CurrentAltitude - LastAltitude
+                        
+                if CurrentAzimuth != 0:   
+                    OffsettAzimuth = CurrentAzimuth - LastAzimuth
+                        
+                print("Calibration OffsetAltitude,OffsettAzimuth ",OffsetAltitude, OffsettAzimuth)
+                KeyInput = input("Press Enter")
+
+            elif keyboard.is_pressed("right"):
+                CurrentAzimuth = CurrentAzimuth+PosAdjustment
+                send_coords(CurrentAltitude, CurrentAzimuth)
+                print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
+            elif keyboard.is_pressed("left"):
+                CurrentAzimuth = CurrentAzimuth-PosAdjustment
+                send_coords(CurrentAltitude, CurrentAzimuth)
+                print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
+                
+            elif keyboard.is_pressed("up"):
+                if mirror == False:
+                    CurrentAltitude = CurrentAltitude+PosAdjustment
+                else:
+                    CurrentAltitude = CurrentAltitude-PosAdjustment
+                send_coords(CurrentAltitude, CurrentAzimuth)
+                print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
+                
+            elif keyboard.is_pressed("down"):
+
+                if mirror == False:
+                    CurrentAltitude = CurrentAltitude-PosAdjustment
+                else:
+                    CurrentAltitude = CurrentAltitude+PosAdjustment
+                    
+                send_coords(CurrentAltitude, CurrentAzimuth)
+                print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
+                
+            time.sleep(PosAdjustment*15.0)
+            
    
 
 

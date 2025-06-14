@@ -87,7 +87,7 @@ void CombinedControl :: enableJoystick()
 	
 	static bool firstRun = false;
 	uint8_t Mtr3CntrlRange[2] = {2,3};
-	uint8_t TwoMtrCntrlRange[2] = {2,3};//{0,2};
+	uint8_t TwoMtrCntrlRange[2] = {0,2};
 	uint8_t ControlRange[2];
 
 	if (_mtr3JSControl == true)
