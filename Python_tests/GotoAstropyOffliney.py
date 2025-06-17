@@ -26,7 +26,7 @@ REQUEST_POS_NO_MOVE     = 12
 loc = EarthLocation(lat=33.1424005*u.deg, lon=-96.8599673*u.deg, height=0*u.m)
 
 
-arduino = serial.Serial(port='COM3', baudrate=115200, timeout=.2)
+arduino = serial.Serial(port='COM14', baudrate=115200, timeout=.2)
 
 
 #PosAdjustment = 0.01
@@ -39,19 +39,23 @@ LastAltitude = 0
 LastAzimuth = 0
 TargetObject = ''
 
+MatrixSize = 5
+step_size = .021
+
 Objects = ['moon', 'mars', 'jupiter', 'saturn', 'mercury', 'venus', 'sun']
 
 
 def DelayAndCheckForBackspace(delay_in_seconds):
     BackspaceDetected = False
     
-    for secs in range(0,delay_in_seconds):
-        time.sleep(1)
-        print('.')
+    for secs in range(0,int(delay_in_seconds * 100)):
+        time.sleep(1/100)
+        if secs % 100 == 0:
+            print('.')
         if keyboard.is_pressed('backspace'):
             print ('backspace detected. Exiting tracking...')
-            break
             BackspaceDetected = True
+            break
 
     return BackspaceDetected
             
@@ -164,8 +168,8 @@ def Scan_For_Object():
     global CurrentAltitude
     global CurrentAzimuth
 
-    MatrixSize = 5
-    step_size = 0.021
+    global MatrixSize
+    global step_size
 
     matrix = BuildScanArray(MatrixSize, step_size)
     print ('Press Backspace to exit')
@@ -178,26 +182,26 @@ def Scan_For_Object():
                 NextAltitude = CurrentAltitude + matrix[element][0][1]
                 print("(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
                 go_to(NextAltitude, NextAzimuth)
-                BackspaceDetected = DelayAndCheckForBackspace(MatrixSize*2)
+                BackspaceDetected = DelayAndCheckForBackspace(step_size * 15)
                 if BackspaceDetected == False:
                     NextAzimuth = CurrentAzimuth + matrix[element][-1][0]
                     NextAltitude = CurrentAltitude + matrix[element][-1][1]
                     print("(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
                     go_to(NextAltitude, NextAzimuth)
-                    BackspaceDetected = DelayAndCheckForBackspace(MatrixSize*2)
+                    BackspaceDetected = DelayAndCheckForBackspace(step_size * 15)
 
             else:        # odd row scan
                 NextAzimuth = CurrentAzimuth + matrix[element][-1][0]
                 NextAltitude = CurrentAltitude + matrix[element][-1][1]
                 print("(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
                 go_to(NextAltitude, NextAzimuth)
-                BackspaceDetected = DelayAndCheckForBackspace(MatrixSize*2)
+                BackspaceDetected = DelayAndCheckForBackspace(step_size * 15)
                 if BackspaceDetected == False:
                     NextAzimuth = CurrentAzimuth + matrix[element][0][0]
                     NextAltitude = CurrentAltitude + matrix[element][0][1]
                     print("(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
                     go_to(NextAltitude, NextAzimuth)
-                    BackspaceDetected = DelayAndCheckForBackspace(MatrixSize*2)
+                    BackspaceDetected = DelayAndCheckForBackspace(step_size * 15)
 
 
 def hex_to_float(hex_string):
@@ -280,40 +284,42 @@ arduino.flushInput()
 ##    print(",", end="")
 ##    
     
+def print_options():
+    print ("moon coordinates",get_coords('moon'))
+    print("What object would you like to track?")
+    print("or press 'h' to re-center motors,")
+    print("or press 'g' to go to object,")
+    print("or press 't' to track object,")
+    print("or press 'j' to toggle joystick control,")
+    print("press 'f' to switch to fast mode")
+    print("press 's' to switch to slow mode")
+    print("press 'a' to perform a scan")
+    print("or press 'm' to enable mirror mode")
+    print("or press 'n' to disable mirror mode")
+    print("'e' to exit")
+
+def is_float(string):
+    try:
+        float(string)
+        return True
+    except ValueError:
+        return False
+    
+def is_int(string):
+    try:
+        float(string)
+        return True
+    except ValueError:
+        return False
 
 
 if 1:
     if 1:
         CurrentAltitude =  0.0
         CurrentAzimuth = 0.0
-##        print ("IMUData",CurrentAltitude, CurrentAzimuth)
-        #OverRideControllerCoordinates(CurrentAltitude,CurrentAzimuth)
-
-##        CurrentAltitude =  CurrentAltitude-0.02
-##        
-##        send_coords(CurrentAltitude,CurrentAzimuth)
-##        time.sleep(0.3)
-##        CurrentAltitude =  CurrentAltitude-0.02
-##        
-##        send_coords(CurrentAltitude,CurrentAzimuth)
-        
-
-        print ("moon coordinates",get_coords('moon'))
-
-            #arduino.write(str.encode("40,1;"))
-        print("What object would you like to track?")
-        print("or press 'h' to re-center motors,")
-        print("or press 'g' to go to object,")
-        print("or press 't' to track object,")
-        print("or press 'j' to enable joystick,")
-        print("press 'f' to switch to fast mode")
-        print("press 's' to switch to slow mode")
-        print("press 'a' to perform a scAn")
-        print("or press 'm' to enable mirror mode")
-        print("or press 'n' to disable mirror mode")
-        print("'e' to exit")
-
-                
+        JoystickIsToggled = False
+        OverRideControllerCoordinates(0,0)
+        print_options()
         while True:
             arduino.flushInput()
 
@@ -323,31 +329,36 @@ if 1:
             if keyboard.is_pressed("h"):
                 print("Re-centering motors. Please wait...")
                 go_home()
-                KeyInput = input("Press Enter")
+                KeyInput = input("Press Enter To Return To Menu")
+                print_options()
                 
             elif keyboard.is_pressed("f"):
                 fast = True
                 print("Switching to fast mode...")
                 arduino.write(str.encode("20,1;"))
-                KeyInput = input("Press Enter")
+                KeyInput = input("Press Enter To Return To Menu")
+                print_options()
              
             elif keyboard.is_pressed("s"):
                 fast = False
                 print("Switching to slow mode...")
                 arduino.write(str.encode("20,0;"))
-                KeyInput = input("Press Enter")
+                KeyInput = input("Press Enter To Return To Menu")
+                print_options()
                
             elif keyboard.is_pressed("m"):
                 mirror = True
                 print("Enabling mirror mode...")
                 arduino.write(str.encode("21,1;"))
-                KeyInput = input("Press Enter")
+                KeyInput = input("Press Enter To Return To Menu")
+                print_options()
 
             elif keyboard.is_pressed("n"):
                 mirror = False
                 print("Disabling mirror mode...")
                 arduino.write(str.encode("21,0;"))
-                KeyInput = input("Press Enter")
+                KeyInput = input("Press Enter To Return To Menu")
+                print_options()
                 
             elif keyboard.is_pressed("e"):
                 print("Exiting program.") 
@@ -355,17 +366,41 @@ if 1:
                 break
             
             elif keyboard.is_pressed("a"):
-                arduino.write(str.encode("41;")) # disable joystick during Scan
                 if TargetObject != "":
+                    input_is_valid = False
+                    while not input_is_valid:
+                        MatrixSize_input = input("Enter scan matrix size: ")
+                        if is_int(MatrixSize_input):
+                            MatrixSize_input = int(MatrixSize_input)
+                        else:
+                            continue
+                        if MatrixSize_input > 1 and MatrixSize_input < 100:
+                            MatrixSize = MatrixSize_input
+                            input_is_valid = True
+                        print()
+                    print("You chose scan matrix size " + str(MatrixSize))
+                    input_is_valid = False
+                    while not input_is_valid:
+                        step_size_input = input("Enter scan step size: ")
+                        if is_float(step_size_input):
+                            step_size_input = float(step_size_input)
+                        else:
+                            continue
+                        if step_size_input > 0.0 and step_size_input < .5:
+                            step_size = step_size_input
+                            input_is_valid = True
+                        print()
+                    print("You chose step size " + str(step_size))
+
                     print("Scanning for " + TargetObject   + " (press backspace to stop Scan)...")
                     Scan_For_Object()
 
                 else:
-                    print("PLease go to a planet first")
-                KeyInput = input("Press Enter")
+                    print("Please go to a planet first")
+                KeyInput = input("Press Enter To Return To Menu")
+                print_options()
                     
             elif keyboard.is_pressed("t"):
-                arduino.write(str.encode("41;")) # disable joystick during tracking
                 if TargetObject != "":
                     print("Tracking " + TargetObject   + " (press backspace to stop tracking)...")
                     track_object(TargetObject)
@@ -376,7 +411,8 @@ if 1:
                 else:
                     print("PLease go to a planet first")
                 
-                KeyInput = input("Press Enter")
+                KeyInput = input("Press Enter To Return To Menu")
+                print_options()
                 
             
             elif keyboard.is_pressed("g"):
@@ -389,6 +425,9 @@ if 1:
                 if ObjectQuery != "" and len(ObjectQuery) == 1:
                     TargetObject = (Objects[int(ObjectQuery)])
                     coords = get_coords(TargetObject)
+                    if coords[0] < 0:
+                        print("Sorry, the requested object is not currently visible")
+                        continue
                     LastAltitude = coords[0]+OffsetAltitude
                     CurrentAltitude = LastAltitude
                     
@@ -397,12 +436,18 @@ if 1:
                     go_to(LastAltitude, LastAzimuth)
                     
                 print ("ObjectQuery", ObjectQuery)
-                KeyInput = input("Press Enter")
+                KeyInput = input("Press Enter To Return To Menu")
+                print_options()
                     
             elif keyboard.is_pressed("j"):
-                print("Enabled Joystick...")
+                if JoystickIsToggled:
+                    print("Setting joystick to control focus")
+                else:
+                    print("Setting joystick to control Alt/Az")
+                JoystickIsToggled = not JoystickIsToggled
                 arduino.write(str.encode("40,1;"))
-                KeyInput = input("Press Enter")
+                KeyInput = input("Press Enter To Return To Menu")
+                print_options()
                 
             elif keyboard.is_pressed("c"):
                 print(OffsetAltitude, OffsettAzimuth,CurrentAltitude, CurrentAzimuth, LastAltitude, CurrentAzimuth )
@@ -413,7 +458,8 @@ if 1:
                     OffsettAzimuth = CurrentAzimuth - LastAzimuth
                         
                 print("Calibration OffsetAltitude,OffsettAzimuth ",OffsetAltitude, OffsettAzimuth)
-                KeyInput = input("Press Enter")
+                KeyInput = input("Press Enter To Return To Menu")
+                print_options()
 
             elif keyboard.is_pressed("right"):
                 CurrentAzimuth = CurrentAzimuth+PosAdjustment
