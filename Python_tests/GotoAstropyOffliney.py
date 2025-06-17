@@ -170,38 +170,30 @@ def Scan_For_Object():
 
     global MatrixSize
     global step_size
-
     matrix = BuildScanArray(MatrixSize, step_size)
-    print ('Press Backspace to exit')
-        
-    while not keyboard.is_pressed('backspace'):
-
-        for element in range(MatrixSize):
-            if element%2 == 0: # even row 
-                NextAzimuth = CurrentAzimuth + matrix[element][0][0]
-                NextAltitude = CurrentAltitude + matrix[element][0][1]
-                print("(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
+    print ('Press Backspace to exit',range(MatrixSize))
+    for row in range(0,MatrixSize):
+        BackspaceDetected = False
+        if row%2 == 0: # even row. First row is even
+            for col in range(0,MatrixSize):
+                NextAzimuth = CurrentAzimuth + matrix[row][col][0]
+                NextAltitude = CurrentAltitude + matrix[row][col][1]
+                print(row,col,"1(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
                 go_to(NextAltitude, NextAzimuth)
                 BackspaceDetected = DelayAndCheckForBackspace(step_size * 15)
-                if BackspaceDetected == False:
-                    NextAzimuth = CurrentAzimuth + matrix[element][-1][0]
-                    NextAltitude = CurrentAltitude + matrix[element][-1][1]
-                    print("(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
-                    go_to(NextAltitude, NextAzimuth)
-                    BackspaceDetected = DelayAndCheckForBackspace(step_size * 15)
-
-            else:        # odd row scan
-                NextAzimuth = CurrentAzimuth + matrix[element][-1][0]
-                NextAltitude = CurrentAltitude + matrix[element][-1][1]
-                print("(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
+                if BackspaceDetected:
+                    break
+        else:        # odd row scan
+            for col in range(0,MatrixSize):
+                NextAzimuth = CurrentAzimuth + matrix[row][MatrixSize-1-col][0]
+                NextAltitude = CurrentAltitude + matrix[row][MatrixSize-1-col][1]
+                print(row,col,"2(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
                 go_to(NextAltitude, NextAzimuth)
                 BackspaceDetected = DelayAndCheckForBackspace(step_size * 15)
-                if BackspaceDetected == False:
-                    NextAzimuth = CurrentAzimuth + matrix[element][0][0]
-                    NextAltitude = CurrentAltitude + matrix[element][0][1]
-                    print("(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
-                    go_to(NextAltitude, NextAzimuth)
-                    BackspaceDetected = DelayAndCheckForBackspace(step_size * 15)
+                if BackspaceDetected:
+                    break
+        if BackspaceDetected:
+            break
 
 
 def hex_to_float(hex_string):
@@ -369,12 +361,12 @@ if 1:
                 if TargetObject != "":
                     input_is_valid = False
                     while not input_is_valid:
-                        MatrixSize_input = input("Enter scan matrix size: ")
+                        MatrixSize_input = input("Enter scan matrix size (odd number): ")
                         if is_int(MatrixSize_input):
                             MatrixSize_input = int(MatrixSize_input)
                         else:
                             continue
-                        if MatrixSize_input > 1 and MatrixSize_input < 100:
+                        if MatrixSize_input > 1 and MatrixSize_input < 100 and MatrixSize_input % 2 == 1:
                             MatrixSize = MatrixSize_input
                             input_is_valid = True
                         print()
