@@ -26,7 +26,7 @@ REQUEST_POS_NO_MOVE     = 12
 loc = EarthLocation(lat=33.1424005*u.deg, lon=-96.8599673*u.deg, height=0*u.m)
 
 
-arduino = serial.Serial(port='COM14', baudrate=115200, timeout=.2)
+arduino = serial.Serial(port='COM3', baudrate=115200, timeout=.2)
 
 
 #PosAdjustment = 0.01
@@ -178,7 +178,7 @@ def Scan_For_Object():
             for col in range(0,MatrixSize):
                 NextAzimuth = CurrentAzimuth + matrix[row][col][0]
                 NextAltitude = CurrentAltitude + matrix[row][col][1]
-                print(row,col,"1(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
+                #print(row,col,"1(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
                 go_to(NextAltitude, NextAzimuth)
                 BackspaceDetected = DelayAndCheckForBackspace(step_size * 15)
                 if BackspaceDetected:
@@ -187,7 +187,7 @@ def Scan_For_Object():
             for col in range(0,MatrixSize):
                 NextAzimuth = CurrentAzimuth + matrix[row][MatrixSize-1-col][0]
                 NextAltitude = CurrentAltitude + matrix[row][MatrixSize-1-col][1]
-                print(row,col,"2(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
+                #print(row,col,"2(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
                 go_to(NextAltitude, NextAzimuth)
                 BackspaceDetected = DelayAndCheckForBackspace(step_size * 15)
                 if BackspaceDetected:
@@ -279,14 +279,14 @@ arduino.flushInput()
 def print_options():
     print ("moon coordinates",get_coords('moon'))
     print("What object would you like to track?")
-    print("or press 'h' to re-center motors,")
-    print("or press 'g' to go to object,")
-    print("or press 't' to track object,")
-    print("or press 'j' to toggle joystick control,")
-    print("press 'f' to switch to fast mode")
-    print("press 's' to switch to slow mode")
-    print("press 'a' to perform a scan")
-    print("or press 'm' to enable mirror mode")
+    print("or press 'h' to Home motors,")
+    print("or press 'g' to Go to object,")
+    print("or press 't' to Track object,")
+    print("or press 'j' to set Joystick control,")
+    print("press 'f' to switch to Fast mode")
+    print("press 's' to switch to Slow mode")
+    print("press 'a' to perform a scAn")
+    print("or press 'm' to enable Mirror mode")
     print("or press 'n' to disable mirror mode")
     print("'e' to exit")
 
@@ -319,12 +319,14 @@ if 1:
             first = True
             arduino.flushInput()
             if keyboard.is_pressed("h"):
+                keyboard.press('backspace')
                 print("Re-centering motors. Please wait...")
                 go_home()
                 KeyInput = input("Press Enter To Return To Menu")
                 print_options()
                 
             elif keyboard.is_pressed("f"):
+                keyboard.press('backspace')
                 fast = True
                 print("Switching to fast mode...")
                 arduino.write(str.encode("20,1;"))
@@ -332,6 +334,7 @@ if 1:
                 print_options()
              
             elif keyboard.is_pressed("s"):
+                keyboard.press('backspace')
                 fast = False
                 print("Switching to slow mode...")
                 arduino.write(str.encode("20,0;"))
@@ -339,6 +342,7 @@ if 1:
                 print_options()
                
             elif keyboard.is_pressed("m"):
+                keyboard.press('backspace')
                 mirror = True
                 print("Enabling mirror mode...")
                 arduino.write(str.encode("21,1;"))
@@ -346,6 +350,7 @@ if 1:
                 print_options()
 
             elif keyboard.is_pressed("n"):
+                keyboard.press('backspace')
                 mirror = False
                 print("Disabling mirror mode...")
                 arduino.write(str.encode("21,0;"))
@@ -358,10 +363,11 @@ if 1:
                 break
             
             elif keyboard.is_pressed("a"):
+                keyboard.press('backspace')
                 if TargetObject != "":
                     input_is_valid = False
                     while not input_is_valid:
-                        MatrixSize_input = input("Enter scan matrix size (odd number): ")
+                        MatrixSize_input = input("Enter scan matrix size (ODD number): ")
                         if is_int(MatrixSize_input):
                             MatrixSize_input = int(MatrixSize_input)
                         else:
@@ -378,9 +384,10 @@ if 1:
                             step_size_input = float(step_size_input)
                         else:
                             continue
-                        if step_size_input > 0.0 and step_size_input < .5:
+                        if step_size_input > 0.0 and step_size_input < 5.0:
                             step_size = step_size_input
                             input_is_valid = True
+                            PosAdjustment = step_size # Hack to configure this value. TODO. Add separate control input for this in the next rev
                         print()
                     print("You chose step size " + str(step_size))
 
@@ -393,6 +400,7 @@ if 1:
                 print_options()
                     
             elif keyboard.is_pressed("t"):
+                keyboard.press('backspace')
                 if TargetObject != "":
                     print("Tracking " + TargetObject   + " (press backspace to stop tracking)...")
                     track_object(TargetObject)
@@ -403,7 +411,7 @@ if 1:
                 else:
                     print("PLease go to a planet first")
                 
-                KeyInput = input("Press Enter To Return To Menu")
+                KeyInput = input("\0Press Enter To Return To Menu")
                 print_options()
                 
             
@@ -431,17 +439,29 @@ if 1:
                 KeyInput = input("Press Enter To Return To Menu")
                 print_options()
                     
-            elif keyboard.is_pressed("j"):
-                if JoystickIsToggled:
-                    print("Setting joystick to control focus")
-                else:
-                    print("Setting joystick to control Alt/Az")
-                JoystickIsToggled = not JoystickIsToggled
-                arduino.write(str.encode("40,1;"))
+            elif keyboard.is_pressed('j'):
+                keyboard.press('backspace')
+                
+                JSselection  = input("Enter 1 for joystick control or 2 for enabling joystick")
+                if is_int(JSselection):
+                    if JSselection == "1":
+                        if JoystickIsToggled:
+                            print("Setting joystick to control focus")
+                        else:
+                            print("Setting joystick to control Alt/Az")
+                        JoystickIsToggled = not JoystickIsToggled
+                        arduino.write(str.encode("40,1;"))
+                        
+                    elif JSselection == "2":
+                        arduino.write(str.encode("41,1;"))
+                        print("joystick Enabled")
+                        
+                
                 KeyInput = input("Press Enter To Return To Menu")
                 print_options()
                 
             elif keyboard.is_pressed("c"):
+                keyboard.press('backspace')
                 print(OffsetAltitude, OffsettAzimuth,CurrentAltitude, CurrentAzimuth, LastAltitude, CurrentAzimuth )
                 if CurrentAltitude != 0:
                     OffsetAltitude = CurrentAltitude - LastAltitude
@@ -450,17 +470,20 @@ if 1:
                     OffsettAzimuth = CurrentAzimuth - LastAzimuth
                         
                 print("Calibration OffsetAltitude,OffsettAzimuth ",OffsetAltitude, OffsettAzimuth)
-                KeyInput = input("Press Enter To Return To Menu")
+                KeyInput = input("\0Press Enter To Return To Menu")
                 print_options()
 
             elif keyboard.is_pressed("right"):
                 CurrentAzimuth = CurrentAzimuth+PosAdjustment
                 send_coords(CurrentAltitude, CurrentAzimuth)
                 print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
+                time.sleep(PosAdjustment*15.0)
+                
             elif keyboard.is_pressed("left"):
                 CurrentAzimuth = CurrentAzimuth-PosAdjustment
                 send_coords(CurrentAltitude, CurrentAzimuth)
                 print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
+                time.sleep(PosAdjustment*15.0)
                 
             elif keyboard.is_pressed("up"):
                 if mirror == False:
@@ -469,6 +492,7 @@ if 1:
                     CurrentAltitude = CurrentAltitude-PosAdjustment
                 send_coords(CurrentAltitude, CurrentAzimuth)
                 print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
+                time.sleep(PosAdjustment*15.0)
                 
             elif keyboard.is_pressed("down"):
 
@@ -479,8 +503,9 @@ if 1:
                     
                 send_coords(CurrentAltitude, CurrentAzimuth)
                 print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
+                time.sleep(PosAdjustment*15.0)
                 
-            time.sleep(PosAdjustment*15.0)
+            
             
    
 

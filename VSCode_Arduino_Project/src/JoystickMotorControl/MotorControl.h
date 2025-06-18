@@ -145,7 +145,7 @@ enum : uint8_t {
     SET_DIRECTION           = 39,
     // 40-49 is reserved for additional commands
     JS_TOGGLE_CNTRL         = 40, // Toggle joystick Mtrl Control
-    JS_DISABLE              = 41, //joystick
+    JS_ENABLE              	= 41, //joystick
     MOTOR_STOP              = 42, //emergency stop
     MOTOR_HOME              = 43, //DONT USE THIS
     SEEK                    = 44, //DONT USE THIS

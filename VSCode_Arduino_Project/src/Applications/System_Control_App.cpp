@@ -62,6 +62,7 @@ void onDeceleration(); /* Set motor deceleration */
 void onPower(); /* Set motor power */
 void onDirection(); /* Set motor direction */
 void onJStoggleCntl(); /* Toggle joystick motorl control */
+void onJSEnable(); /* Enable/Disable joystick control */
 void onJSDisable(); /* Disable joystick control */
 void onMotorStop(); /* Stop the motor */
 void onMotorHome(); /* Move motor to home position */
@@ -230,7 +231,7 @@ void attachCommandCallbacks()
 	cmdMessenger.attach(SET_DIRECTION, onDirection);	   // Reply: S,0;
 
 	cmdMessenger.attach(JS_TOGGLE_CNTRL, onJStoggleCntl);			   // Reply: S,1;
-	cmdMessenger.attach(JS_DISABLE, onJSDisable);		   // Reply: S,1;
+	cmdMessenger.attach(JS_ENABLE, onJSEnable);		   // Reply: S,1;
 	cmdMessenger.attach(MOTOR_STOP, onMotorStop);		   // Reply: S,1;
 	cmdMessenger.attach(MOTOR_HOME, onMotorHome);		   // Reply: S,1;
 	cmdMessenger.attach(SEEK, onSeek);					   // Reply: S,1;
@@ -743,6 +744,13 @@ void onJSDisable()
 {
 	motorFlags[0].isJSEnable = false;
 	control.disableJoystick();
+	onSuccess();
+}
+
+void onJSEnable()
+{
+	uint8_t enable_disable = cmdMessenger.readInt16Arg();
+	motorFlags[0].isJSEnable = bool(enable_disable);
 	onSuccess();
 }
 
