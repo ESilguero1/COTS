@@ -1,48 +1,22 @@
+import numpy as np
 
-import struct
+# Original vector in Cartesian coordinates
+x = -1
+y = 1
 
-def hex_to_float(hex_string):
-    try:
-        hex_string = hex_string.zfill(8)
-        
-        # Remove '0x' prefix and any leading/trailing spaces, then convert to bytes
-        hex_string = hex_string.replace("0x", "").strip()
-        byte_data = bytes.fromhex(hex_string)
+# Convert to polar coordinates
+theta = np.arctan2(y, x)
+rho = np.hypot(x, y)
 
-        # Unpack the byte data as a float (assuming big-endian format)
-        float_value = struct.unpack('>f', byte_data)[0]
-        return float_value
-    
-    except ValueError as e:
-        return f"Error: Invalid hex string - {e}"
-    except struct.error as e:
-        return f"Error: Could not unpack hex data - {e}"
-    
+# Desired rotation angle (in radians)
+rotation_angle = np.radians(-135) # Rotate by 45 degrees
 
-def ConverToPolarCoordinates(neg_pos_degrees):
-    if neg_pos_degrees < 0.0:
-        neg_pos_degrees = 360 + neg_pos_degrees
-        
-    return neg_pos_degrees
+# Apply the rotation
+new_theta = theta + rotation_angle
 
-def WrapPolarCoordinatesAround(degrees):
-    if degrees >= 360.0:
-        degrees -= 360.0
-        
-    return degrees
-    
-IntValue = "0"
+# Convert back to Cartesian coordinates
+new_x = rho * np.cos(new_theta)
+new_y = rho * np.sin(new_theta)
 
-print (hex_to_float(IntValue))
-
-PolarOffsetDegrees = 0 # IMU is mounted 180 degrees off
-PolarDegreesMeasurement = ConverToPolarCoordinates(-30)
-
-if (PolarDegreesMeasurement > PolarOffsetDegrees):
-    PolarDegreesMeasurement = WrapPolarCoordinatesAround(PolarDegreesMeasurement-PolarOffsetDegrees)
-else:
-    PolarDegreesMeasurement = WrapPolarCoordinatesAround(PolarOffsetDegrees-PolarDegreesMeasurement)
-    
-print (WrapPolarCoordinatesAround(PolarDegreesMeasurement))
-        
-        
+print(f"Original vector: ({x}, {y})")
+print(f"Rotated vector: ({new_x}, {new_y})")

@@ -224,7 +224,7 @@ void CombinedControl :: goPos(uint8_t motor_id, signed long position)
 		}
 		else if (motor_id == 1)
 		{	
-			if ((position < 0) || (position > 2304000) )
+			if ((position < (-4582400/2)) || (position > 2304000) )
 			{
 			Serial.print("Limit range exceeded");
 			}

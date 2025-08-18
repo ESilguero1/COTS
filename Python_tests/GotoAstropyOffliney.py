@@ -19,8 +19,8 @@ import string
 REQUEST_POS_NO_MOVE     = 12
 
 # force astropy to work OFFLINE
-#iers.conf.auto_download = False
-#iers.conf.auto_max_age = None
+iers.conf.auto_download = False
+iers.conf.auto_max_age = None
 
 
 loc = EarthLocation(lat=33.1424005*u.deg, lon=-96.8599673*u.deg, height=0*u.m)
@@ -31,7 +31,7 @@ arduino = serial.Serial(port='COM3', baudrate=115200, timeout=.2)
 
 #PosAdjustment = 0.01
 
-PosAdjustment = 0.02
+PosAdjustment = 0.05
 OffsetAltitude = 0
 OffsettAzimuth = 0
 
@@ -41,6 +41,8 @@ TargetObject = ''
 
 MatrixSize = 5
 step_size = .021
+
+
 
 Objects = ['moon', 'mars', 'jupiter', 'saturn', 'mercury', 'venus', 'sun']
 
@@ -170,6 +172,9 @@ def Scan_For_Object():
 
     global MatrixSize
     global step_size
+    StartingAlt = CurrentAltitude
+    StartingAz = CurrentAzimuth
+    
     matrix = BuildScanArray(MatrixSize, step_size)
     print ('Press Backspace to exit',range(MatrixSize))
     for row in range(0,MatrixSize):
@@ -180,7 +185,10 @@ def Scan_For_Object():
                 NextAltitude = CurrentAltitude + matrix[row][col][1]
                 #print(row,col,"1(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
                 go_to(NextAltitude, NextAzimuth)
-                BackspaceDetected = DelayAndCheckForBackspace(step_size * 15)
+                #BackspaceDetected = DelayAndCheckForBackspace(step_size * 15)
+                Delay = 0.75+abs(CurrentAzimuth-NextAzimuth)/2.0
+                BackspaceDetected = DelayAndCheckForBackspace(Delay)
+                print(row,col,"1(" + str(CurrentAzimuth) + ", " + str(NextAzimuth) + ", " + str(Delay)+ ")")
                 if BackspaceDetected:
                     break
         else:        # odd row scan
@@ -189,12 +197,15 @@ def Scan_For_Object():
                 NextAltitude = CurrentAltitude + matrix[row][MatrixSize-1-col][1]
                 #print(row,col,"2(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
                 go_to(NextAltitude, NextAzimuth)
-                BackspaceDetected = DelayAndCheckForBackspace(step_size * 15)
+                Delay = 0.75+abs(CurrentAzimuth-NextAzimuth)/2.0
+                BackspaceDetected = DelayAndCheckForBackspace(Delay)
+                print(row,col,"1(" + str(CurrentAzimuth) + ", " + str(NextAzimuth) + ", " + str(Delay)+ ")")
                 if BackspaceDetected:
                     break
         if BackspaceDetected:
             break
-
+    if BackspaceDetected == False:
+        go_to(StartingAlt, StartingAz) # If we are here, means the scan did not yield any desired results Return to starting point
 
 def hex_to_float(hex_string):
     try:
@@ -238,10 +249,12 @@ def ReadIMUdataSet():
     return Response
 
 
+print ("moon coordinates",get_coords('moon'))
 
 fast = False
 mirror = False
 arduino.flushInput()
+
 
 ##for sec in range(0,10):
 ##    time.sleep(0.1)
@@ -364,38 +377,36 @@ if 1:
             
             elif keyboard.is_pressed("a"):
                 keyboard.press('backspace')
-                if TargetObject != "":
-                    input_is_valid = False
-                    while not input_is_valid:
-                        MatrixSize_input = input("Enter scan matrix size (ODD number): ")
-                        if is_int(MatrixSize_input):
-                            MatrixSize_input = int(MatrixSize_input)
-                        else:
-                            continue
-                        if MatrixSize_input > 1 and MatrixSize_input < 100 and MatrixSize_input % 2 == 1:
-                            MatrixSize = MatrixSize_input
-                            input_is_valid = True
-                        print()
-                    print("You chose scan matrix size " + str(MatrixSize))
-                    input_is_valid = False
-                    while not input_is_valid:
-                        step_size_input = input("Enter scan step size: ")
-                        if is_float(step_size_input):
-                            step_size_input = float(step_size_input)
-                        else:
-                            continue
-                        if step_size_input > 0.0 and step_size_input < 5.0:
-                            step_size = step_size_input
-                            input_is_valid = True
-                            PosAdjustment = step_size # Hack to configure this value. TODO. Add separate control input for this in the next rev
-                        print()
-                    print("You chose step size " + str(step_size))
+  
+                input_is_valid = False
+                while not input_is_valid:
+                    MatrixSize_input = input("Enter scan matrix size (ODD number): ")
+                    if is_int(MatrixSize_input):
+                        MatrixSize_input = int(MatrixSize_input)
+                    else:
+                        continue
+                    if MatrixSize_input > 1 and MatrixSize_input < 100 and MatrixSize_input % 2 == 1:
+                        MatrixSize = MatrixSize_input
+                        input_is_valid = True
+                    print()
+                print("You chose scan matrix size " + str(MatrixSize))
+                input_is_valid = False
+                while not input_is_valid:
+                    step_size_input = input("Enter scan step size: ")
+                    if is_float(step_size_input):
+                        step_size_input = float(step_size_input)
+                    else:
+                        continue
+                    if step_size_input > 0.0 and step_size_input < 5.0:
+                        step_size = step_size_input
+                        input_is_valid = True
+                        PosAdjustment = step_size # Hack to configure this value. TODO. Add separate control input for this in the next rev
+                    print()
+                print("You chose step size " + str(step_size))
 
-                    print("Scanning for " + TargetObject   + " (press backspace to stop Scan)...")
-                    Scan_For_Object()
+                print("Scanning for " + TargetObject   + " (press backspace to stop Scan)...")
+                Scan_For_Object()
 
-                else:
-                    print("Please go to a planet first")
                 KeyInput = input("Press Enter To Return To Menu")
                 print_options()
                     
@@ -477,13 +488,15 @@ if 1:
                 CurrentAzimuth = CurrentAzimuth+PosAdjustment
                 send_coords(CurrentAltitude, CurrentAzimuth)
                 print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
-                time.sleep(PosAdjustment*15.0)
+                Delay = 0.3+abs(CurrentAzimuth-LastAzimuth)/2.0
+                time.sleep(Delay)
                 
             elif keyboard.is_pressed("left"):
                 CurrentAzimuth = CurrentAzimuth-PosAdjustment
                 send_coords(CurrentAltitude, CurrentAzimuth)
                 print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
-                time.sleep(PosAdjustment*15.0)
+                Delay = 0.3+abs(CurrentAzimuth-LastAzimuth)/2.0
+                time.sleep(Delay)
                 
             elif keyboard.is_pressed("up"):
                 if mirror == False:
@@ -492,7 +505,8 @@ if 1:
                     CurrentAltitude = CurrentAltitude-PosAdjustment
                 send_coords(CurrentAltitude, CurrentAzimuth)
                 print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
-                time.sleep(PosAdjustment*15.0)
+                Delay = 0.3+abs(CurrentAzimuth-LastAzimuth)/2.0
+                time.sleep(Delay)
                 
             elif keyboard.is_pressed("down"):
 
@@ -503,7 +517,8 @@ if 1:
                     
                 send_coords(CurrentAltitude, CurrentAzimuth)
                 print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
-                time.sleep(PosAdjustment*15.0)
+                Delay = 0.3+abs(CurrentAzimuth-LastAzimuth)/2.0
+                time.sleep(Delay)
                 
             
             

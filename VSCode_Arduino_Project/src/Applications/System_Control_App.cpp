@@ -742,8 +742,8 @@ void onJStoggleCntl()
 // Format : not changes to outputStr
 void onJSDisable()
 {
-	motorFlags[0].isJSEnable = false;
-	control.disableJoystick();
+	//motorFlags[0].isJSEnable = false;
+	//control.disableJoystick();
 	onSuccess();
 }
 

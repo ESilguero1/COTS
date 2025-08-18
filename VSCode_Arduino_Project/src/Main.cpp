@@ -73,9 +73,9 @@ void setup()
         SystemInitState |= (1 << INIT_MOTOR3_STAT_FAILED);
     }
 
-    //if (BLE_App.Init() != 0) /* Initialize Bluetooth Low Energy (BLE) module */
+   // if (BLE_App.Init() != 0) /* Initialize Bluetooth Low Energy (BLE) module */
     //{
-     //   SystemInitState |= (1 << INIT_BLE_STAT_FAILED);
+     //  SystemInitState |= (1 << INIT_BLE_STAT_FAILED);
     //}
 
     /* enable all, but motor 3 on startup */
