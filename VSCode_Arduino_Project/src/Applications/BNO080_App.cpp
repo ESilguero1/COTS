@@ -19,7 +19,7 @@
 /***************************************************************************************************
  * CONSTANTS AND DEFINITIONS
  **************************************************************************************************/
-#define SAMPLES_TO_AVERAGE  (4)  /* Number of samples to use for averaging IMU data */
+#define SAMPLES_TO_AVERAGE  (6)  /* Number of samples to use for averaging IMU data */
 #define IMU_DATA_SET        (6)  /* Number of data points collected from the IMU */
 
 /***************************************************************************************************
@@ -56,7 +56,7 @@ uint8_t BNO080_App :: Init(void)
   digitalWrite(I2C_SCL, LOW); 
 
 /* Attempt to initialize IMU */
-  delay(350);
+  delay(150);
   Wire.begin();
   Wire.setClock(50000);
   //Wire.setClock(8000);
@@ -69,13 +69,14 @@ uint8_t BNO080_App :: Init(void)
   else
   {
     initState = 0; /* Initialization successful */
-    Wire.setClock(400000); /* Increase I2C speed to 200kHz */
+    Wire.setClock(143000); /* Increase I2C speed to 177kHz */
+
     //mBNO080IMU.enableRotationVector(IMU_DATA_ACQUSITION_PERIOD); /* Configure IMU to send updates every IMU_DATA_ACQUSITION_PERIOD */
     mBNO080IMU.enableGeomagneticRotationVector(IMU_DATA_ACQUSITION_PERIOD); /* Configure IMU to send updates every IMU_DATA_ACQUSITION_PERIOD */
     
     mBNO080IMU.enableAccelerometer(IMU_DATA_ACQUSITION_PERIOD); 
 
-    for (int t = 0; t < 20; t++)
+    for (int t = 0; t < 1; t++)
     {
       delay(IMU_DATA_ACQUSITION_PERIOD);
       Service_BNO080();
@@ -173,6 +174,7 @@ void AverageIMUdata(void)
       
       /* Compute the average */
       AveragedIMUdata[sampleNumber].f /= (float)SAMPLES_TO_AVERAGE;  
+      //AveragedIMUdata[sampleNumber].f = 1.0 + (float(sampleNumber)/10.0); 
     }
   }
 }

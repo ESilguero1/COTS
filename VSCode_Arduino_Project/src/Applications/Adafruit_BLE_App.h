@@ -30,8 +30,9 @@ class Adafruit_BLE_App
 {
 
 	public:
-      uint8_t Init();
-	   void Service_BLE_UART();
+      	uint8_t Init();
+		void Service_BLE_UART();
+		void println(const String &s);
 };
 
 #endif

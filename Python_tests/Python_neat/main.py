@@ -8,32 +8,33 @@ from astronomy_data import get_coords, Objects
 from astropy.utils import iers
 from system_operations import Scan_For_Object, track_object
 from system_operations import OffsetAltitude, OffsetAzimuth, go_to
+import numpy as np
 
-REQUEST_POS_NO_MOVE     = 12
 
 # force astropy to work OFFLINE
-iers.conf.auto_download = False
-iers.conf.auto_max_age = None
+#iers.conf.auto_download = False
+#iers.conf.auto_max_age = None
 
-PosAdjustment = 0.05
-
-LastAltitude = 0
-LastAzimuth = 0
-TargetObject = ''
-
-MatrixSize = 5
-step_size = .021
-
-fast = False
-mirror = False   
 
 def main():
     global OffsetAltitude
     global OffsetAzimuth
     
+    StepAdjustment = 0.05
+    LastAltitude = 0
+    LastAzimuth = 0
+    TargetObject = ''
+
+    MatrixSize = 5
+    scan_step_size = .021
+
+    fast = False
+    mirror = False   
+    
     CurrentAltitude =  0.0
     CurrentAzimuth = 0.0
     JoystickIsToggled = False
+    
     motor_control.OverRideControllerCoordinates(0,0)
     print_options()
     while True:
@@ -105,11 +106,11 @@ def main():
                 else:
                     continue
                 if step_size_input > 0.0 and step_size_input < 5.0:
-                    step_size = step_size_input
+                    scan_step_size = step_size_input
                     input_is_valid = True
-                    PosAdjustment = step_size # Hack to configure this value. TODO. Add separate control input for this in the next rev
+                    StepAdjustment = scan_step_size # Hack to configure this value. TODO. Add separate control input for this in the next rev
                 print()
-            print("You chose step size " + str(step_size))
+            print("You chose step size " + str(scan_step_size))
 
             print("Scanning for " + TargetObject   + " (press backspace to stop Scan)...")
             Scan_For_Object()
@@ -159,18 +160,13 @@ def main():
             JSselection  = input("Enter 1 for joystick to control focus or 2 for enabling joystick to control Alt/Az")
             if is_int(JSselection):
                 if JSselection == "1":
-                    if JoystickIsToggled:
-                        print("Setting joystick to control focus")
-                    else:
-                        print("Setting joystick to control Alt/Az")
-                    JoystickIsToggled = not JoystickIsToggled
+                    print("Setting joystick to control focus")
                     motor_control.set_js_focus()
                     
                 elif JSselection == "2":
                     motor_control.set_js_alt_az()
-                    print("joystick Enabled")
+                    print("joystick alt_az Enabled")
                     
-            
             KeyInput = input("Press Enter To Return To Menu")
             print_options()
             
@@ -188,14 +184,26 @@ def main():
             print_options()
 
         elif keyboard.is_pressed("right"):
-            CurrentAzimuth = CurrentAzimuth+PosAdjustment
+            if mirror == False:
+                CurrentAzimuth = CurrentAzimuth-StepAdjustment
+            else:
+                RotateVectors = rotate_vector_cartesian(1, 0)
+                CurrentAltitude += (RotateVectors[0]*StepAdjustment)
+                CurrentAzimuth += (RotateVectors[1]*StepAdjustment)
+
             go_to(CurrentAltitude, CurrentAzimuth)
             print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
             Delay = 0.3+abs(CurrentAzimuth-LastAzimuth)/2.0
             time.sleep(Delay)
             
         elif keyboard.is_pressed("left"):
-            CurrentAzimuth = CurrentAzimuth-PosAdjustment
+            if mirror == False:
+                CurrentAzimuth = CurrentAzimuth+StepAdjustment
+            else:
+                RotateVectors = rotate_vector_cartesian(-1, 0)
+                CurrentAltitude += (RotateVectors[0]*StepAdjustment)
+                CurrentAzimuth += (RotateVectors[1]*StepAdjustment)
+
             go_to(CurrentAltitude, CurrentAzimuth)
             print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
             Delay = 0.3+abs(CurrentAzimuth-LastAzimuth)/2.0
@@ -203,25 +211,43 @@ def main():
             
         elif keyboard.is_pressed("up"):
             if mirror == False:
-                CurrentAltitude = CurrentAltitude+PosAdjustment
+                CurrentAltitude = CurrentAltitude-StepAdjustment
             else:
-                CurrentAltitude = CurrentAltitude-PosAdjustment
+                RotateVectors = rotate_vector_cartesian(0, 1)
+                CurrentAltitude += (RotateVectors[0]*StepAdjustment)
+                CurrentAzimuth += (RotateVectors[1]*StepAdjustment)
+
             go_to(CurrentAltitude, CurrentAzimuth)
             print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
             Delay = 0.3+abs(CurrentAzimuth-LastAzimuth)/2.0
             time.sleep(Delay)
             
         elif keyboard.is_pressed("down"):
-
             if mirror == False:
-                CurrentAltitude = CurrentAltitude-PosAdjustment
+                CurrentAltitude = CurrentAltitude+StepAdjustment
             else:
-                CurrentAltitude = CurrentAltitude+PosAdjustment
+                RotateVectors = rotate_vector_cartesian(0,-1)
+                CurrentAltitude += (RotateVectors[0]*StepAdjustment)
+                CurrentAzimuth += (RotateVectors[1]*StepAdjustment)
                 
             go_to(CurrentAltitude, CurrentAzimuth)
             print(CurrentAltitude - LastAltitude, CurrentAzimuth - LastAzimuth)
             Delay = 0.3+abs(CurrentAzimuth-LastAzimuth)/2.0
             time.sleep(Delay)
+
+def rotate_vector_cartesian(azimuth, altitude, angle_deg=-135):
+    """
+    Rotate a 2D vector (azimuth, altitude) by angle_deg degrees.
+    Returns the rotated vector in Cartesian coordinates.
+    """
+    # Convert rotation angle to radians
+    phi = np.deg2rad(angle_deg)
+
+    # Apply 2×2 rotation matrix directly in Cartesian space
+    x_new = azimuth * np.cos(phi) - altitude * np.sin(phi)
+    y_new = azimuth * np.sin(phi) + altitude * np.cos(phi)
+
+    return [x_new, y_new]
 
 if __name__ == "__main__":
     main()

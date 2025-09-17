@@ -17,22 +17,22 @@ def go_to(alt, az):
         
     else:
         az = -az
-        y_ticks = int(alt * 25600)
-        x_ticks = int(az * 25600)
-        print('alt sent', alt, y_ticks)
-        print('az sent', az, x_ticks)
-        set_pos(x_ticks, y_ticks)
+        alt_ticks = int(alt * 25600)
+        az_ticks = int(az * 25600)
+        print('alt sent', alt, alt_ticks)
+        print('az sent', az, az_ticks)
+        set_pos(az_ticks, alt_ticks)
 
 def Scan_For_Object():
     global CurrentAltitude
     global CurrentAzimuth
 
     global MatrixSize
-    global step_size
+    global scan_step_size
     StartingAlt = CurrentAltitude
     StartingAz = CurrentAzimuth
     
-    matrix = BuildScanArray(MatrixSize, step_size)
+    matrix = BuildScanArray(MatrixSize, scan_step_size)
     print ('Press Backspace to exit',range(MatrixSize))
     for row in range(0,MatrixSize):
         BackspaceDetected = False
@@ -42,7 +42,7 @@ def Scan_For_Object():
                 NextAltitude = CurrentAltitude + matrix[row][col][1]
                 #print(row,col,"1(" + str(NextAzimuth) + ", " + str(NextAltitude) + ")")
                 go_to(NextAltitude, NextAzimuth)
-                #BackspaceDetected = DelayAndCheckForBackspace(step_size * 15)
+                #BackspaceDetected = DelayAndCheckForBackspace(scan_step_size * 15)
                 Delay = 0.75+abs(CurrentAzimuth-NextAzimuth)/2.0
                 BackspaceDetected = DelayAndCheckForBackspace(Delay)
                 print(row,col,"1(" + str(CurrentAzimuth) + ", " + str(NextAzimuth) + ", " + str(Delay)+ ")")

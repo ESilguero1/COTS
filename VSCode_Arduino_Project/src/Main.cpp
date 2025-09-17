@@ -31,7 +31,6 @@ BNO080_App BNO080App;                /* IMU application object */
 Adafruit_BLE_App BLE_App;            /* Bluetooth application object */
 System_Control_App SystemControlApp; /* System control application object */
 LED_App LEDApp;                      /* IMU application object */
-
 uint8_t SystemInitState = 0; /* Tracks initialization status of the system */
 
 /***************************************************************************************************
@@ -47,9 +46,14 @@ void ServiceJSswitch(void);
  **************************************************************************************************/
 void setup()
 {
+    /* disable all motors */
+    pinMode(MTR_ENA_0, OUTPUT);
+    pinMode(MTR_ENA_1, OUTPUT);
     pinMode(MTR_ENA_2, OUTPUT);
     digitalWrite(MTR_ENA_2, HIGH);
-    
+    digitalWrite(MTR_ENA_0, HIGH);
+    digitalWrite(MTR_ENA_1, HIGH);
+    delay(200);
     LEDApp.Init();
 
     if (BNO080App.Init() != 0)              /* Initialize BNO080 IMU module */
@@ -73,16 +77,17 @@ void setup()
         SystemInitState |= (1 << INIT_MOTOR3_STAT_FAILED);
     }
 
-   // if (BLE_App.Init() != 0) /* Initialize Bluetooth Low Energy (BLE) module */
-    //{
-     //  SystemInitState |= (1 << INIT_BLE_STAT_FAILED);
-    //}
+    if (BLE_App.Init() != 0) /* Initialize Bluetooth Low Energy (BLE) module */
+    {
+       SystemInitState |= (1 << INIT_BLE_STAT_FAILED);
+    }
 
     /* enable all, but motor 3 on startup */
     digitalWrite(MTR_ENA_0, LOW);
     digitalWrite(MTR_ENA_1, LOW);
     digitalWrite(MTR_ENA_2, HIGH);
 
+    SystemControlApp.SetSysInitstate(SystemInitState);               /* Prep Report intialization state*/
     LEDApp.Set_LED_Code(SystemInitState);                           /* Enunciate system intialization state*/
 
     /* Schedule periodic tasks for motor power check and IMU servicing */

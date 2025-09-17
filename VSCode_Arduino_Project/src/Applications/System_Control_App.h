@@ -30,6 +30,7 @@ class System_Control_App
             void ServiceMotor3PowerDisable(void);
             uint32_t RequestMotorStatus(uint8_t target_motor);
             void ToggleJSmtrlControlMode(void);
+            void SetSysInitstate(uint8_t state);
 };
 
 #endif

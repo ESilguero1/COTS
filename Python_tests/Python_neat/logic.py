@@ -31,7 +31,7 @@ def hex_to_float(hex_string):
     except struct.error as e:
         return f"Error: Could not unpack hex data - {e}"
     
-def BuildScanArray(MatrixSize, step_size):
+def BuildScanArray(MatrixSize, scan_step_size):
     #Elevation 
     Rows = MatrixSize
     row_scan_value = 0
@@ -45,8 +45,8 @@ def BuildScanArray(MatrixSize, step_size):
     for row in range(Rows):
         matrix.append([])
         for column in range(Columns):
-            row_scan_value = (-(Rows//2) + row) * step_size
-            col_scan_value = (-(Columns//2) + column) * step_size
+            row_scan_value = (-(Rows//2) + row) * scan_step_size
+            col_scan_value = (-(Columns//2) + column) * scan_step_size
 
             matrix[row].append((col_scan_value, row_scan_value))
             

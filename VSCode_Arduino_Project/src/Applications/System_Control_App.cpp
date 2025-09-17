@@ -17,6 +17,7 @@
 #include "debugutils.h"
 #include "CombinedControl.h"
 #include <SPI.h>
+#include "Adafruit_BLE_App.h"
 
 /***************************************************************************************************
  * CONSTANTS AND DEFINITIONS
@@ -32,6 +33,8 @@ flags motorFlags[3]; // Flags for motor status tracking
 int status[25]; // Array for storing system status data
 extern union floatUnion AveragedIMUdata[6];
 extern uint32_t IMU_Comm_Errors;
+Adafruit_BLE_App BLE_App_sys;            /* Bluetooth application object */
+uint8_t SysInitState = 0; /* Report initialization status of the system */
 
 /***************************************************************************************************
  * PRIVATE FUNCTION PROTOTYPES
@@ -190,9 +193,21 @@ uint32_t  System_Control_App :: RequestMotorStatus(uint8_t target_motor)
 	outputStr.concat(motorStat); /* print out for debug only */
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 
 	return motorStat;
 }
+
+
+
+/***********************************************************************************************//**
+ * @details     
+ **************************************************************************************************/
+void  System_Control_App :: SetSysInitstate(uint8_t state)
+{
+	SysInitState = state; /* Report initialization status of the system */
+}
+
 
 /***********************************************************************************************//**
  * @details     Toggle joystick control mode
@@ -260,6 +275,7 @@ void onSuccess()
 	outputStr.remove(0);
 	outputStr.concat(F("S,1;"));
 	Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 }
 
 void onFail()
@@ -267,6 +283,7 @@ void onFail()
 	outputStr.remove(0);
 	outputStr.concat(F("S,0;"));
 	Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 }
 
 bool _checkFlags(uint8_t motorID)
@@ -315,6 +332,7 @@ void OnUnknownCommand()
 	outputStr.remove(0);
 	outputStr.concat(F("e, unknown command;"));
 	Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 }
 
 // Format : outputStr = "m,time,bit0,bit1,...,bit24;"
@@ -332,9 +350,13 @@ void onRequestMotorStatus()
 		outputStr.concat(F(","));
 		outputStr.concat(status[i]);
 	}
+	
+	outputStr.concat(F(","));
+	outputStr.concat(SysInitState);
 
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 }
 
 // Format : outputStr = "g,time,status;"
@@ -350,6 +372,7 @@ void onRequestStallStatus()
 
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 }
 
 // Format : outputStr = "m,time,oldpos,newpos;"
@@ -368,6 +391,7 @@ void onRequestSetPosNoMove()
 
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 }
 
 // Format : outputStr = "A,ADCBits;"
@@ -379,6 +403,7 @@ void onSetSlowFastJSMotion()
 	outputStr.concat(fast_slow_config);
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 }
 
 // Format : outputStr = "V,ADCVolts;"
@@ -389,7 +414,8 @@ void onSetJSMirrorMode()
 	outputStr.concat(F("mirror_mode_nfig,"));
 	outputStr.concat(mirror_mode_nfig);
 	outputStr.concat(F(";"));
-	Serial.println(outputStr);
+		Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 }
 
 // Format : outputStr = "x,time,xposition;" (Note that it is a 200 stepper motor)
@@ -405,6 +431,7 @@ void onGetXactual()
 
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 }
 
 // Format : outputStr = "v,time,velocity;"
@@ -420,6 +447,7 @@ void onGetVelocity()
 
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 }
 
 // Format : outputStr = "a,time,acceleration;"
@@ -435,6 +463,7 @@ void onGetAcceleration()
 
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 }
 
 // Format : outputStr = "d,time,deceleration;"
@@ -450,6 +479,7 @@ void onGetDeceleration()
 
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 }
 
 // Format : outputStr = "P,time,power;"
@@ -465,6 +495,7 @@ void onGetPower()
 
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 }
 
 // Format : outputStr = "i,IMU data;"
@@ -473,13 +504,13 @@ void onGetIMUData()
 	char hex_string[11]; // Enough space for "0x" + 8 hex digits + null terminator
 
 	outputStr.remove(0);
-	outputStr.concat(F("i,"));
-	outputStr.concat(millis());
-	outputStr.concat(F(","));
+	outputStr.concat(F("imu,"));
+	//outputStr.concat(millis());
+	//outputStr.concat(F(","));
 
 	for (uint8_t e = 0; e < 6; e++ )
 	{
-		sprintf(hex_string, "0x%X", AveragedIMUdata[e].i); /*Convert the hex value to a string*/
+		sprintf(hex_string, "%x", AveragedIMUdata[e].i); /*Convert the hex value to a string*/
 		outputStr.concat(hex_string);
 		outputStr.concat(F(","));
 	}
@@ -487,6 +518,7 @@ void onGetIMUData()
 	outputStr.concat(IMU_Comm_Errors);
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
+	BLE_App_sys.println(outputStr);
 }
 
 // Format : not changes to outputStr

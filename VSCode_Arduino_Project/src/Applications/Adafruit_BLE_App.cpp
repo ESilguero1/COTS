@@ -63,7 +63,7 @@ uint8_t Adafruit_BLE_App :: Init()
 	//digitalWrite(BLUEFRUIT_SPI_RST, LOW);
 	//delay(250);
 	digitalWrite(BLUEFRUIT_SPI_RST, HIGH);
-	//delay(250);
+	delay(100);
 	
 	/* Reserve space for BLE string buffer */
 	BLE_Str.reserve(BLE_CHARS_SIZE);
@@ -113,9 +113,30 @@ uint8_t Adafruit_BLE_App :: Init()
 			if (ble.isVersionAtLeast(MINIMUM_FIRMWARE_VERSION))
 			{
 				//Serial.println(F("Change LED activity to " MODE_LED_BEHAVIOUR));
+				ble.echo(false); 
+				delay(40);                   // no “OK\r\n” noise
+				ble.sendCommandCheckOK("AT+ROLE=1"); // 0=Central, 1=Peripheral
+				delay(40);
+				// min/max interval in units of 1.25 ms (e.g. 24×1.25=30 ms)
+				// slave latency = 0, supervision timeout = 200×10 ms = 2 s
+				ble.sendCommandCheckOK("AT+GAPSETCONNINT=12,12");    // 15 ms conn interval
+				delay(40);
+				ble.sendCommandCheckOK("AT+GAPSETCONNLAT=0");        // no latency
+				delay(40);
+				ble.sendCommandCheckOK("AT+GAPSETCONNTMO=200");      // 2 s supervision
+				delay(40);
+				ble.sendCommandCheckOK("AT+GATTSETMTU=247");
+				delay(40);
+				ble.sendCommandCheckOK("AT+HWPOWERLEVEL=4,7"); // 4=digital output, 7=+4 dBm		
+				delay(40);	
+				ble.sendCommandCheckOK("AT+GATTCHAR=TX,write_without_resp");
+				delay(40);
+				ble.sendCommandCheckOK("AT+BAUDRATE=115200");
+				delay(40);
 				ble.sendCommandCheckOK("AT+HWModeLED=" MODE_LED_BEHAVIOUR);
+				delay(40);
+				
 			}
-			delay(100);
 
 			/* Switch BLE module to data mode */
 			Serial.println(F("Switching to DATA mode!"));
@@ -169,4 +190,9 @@ void Adafruit_BLE_App :: Service_BLE_UART()
 			BLE_Str.remove(0);
 		}
 	}
+}
+
+void Adafruit_BLE_App ::println(const String &s)
+{
+  ble.println(s);
 }

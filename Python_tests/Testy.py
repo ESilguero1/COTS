@@ -1,22 +1,20 @@
 import numpy as np
 
-# Original vector in Cartesian coordinates
-x = -1
-y = 1
 
-# Convert to polar coordinates
-theta = np.arctan2(y, x)
-rho = np.hypot(x, y)
+def rotate_vector_cartesian(azimuth, altitude, angle_deg=-135):
+    """
+    Rotate a 2D vector (azimuth, altitude) by angle_deg degrees.
+    Returns the rotated vector in Cartesian coordinates.
+    """
+    # Convert rotation angle to radians
+    phi = np.deg2rad(angle_deg)
 
-# Desired rotation angle (in radians)
-rotation_angle = np.radians(-135) # Rotate by 45 degrees
+    # Apply 2×2 rotation matrix directly in Cartesian space
+    x_new = azimuth * np.cos(phi) - altitude * np.sin(phi)
+    y_new = azimuth * np.sin(phi) + altitude * np.cos(phi)
 
-# Apply the rotation
-new_theta = theta + rotation_angle
+    return x_new, y_new
 
-# Convert back to Cartesian coordinates
-new_x = rho * np.cos(new_theta)
-new_y = rho * np.sin(new_theta)
-
-print(f"Original vector: ({x}, {y})")
-print(f"Rotated vector: ({new_x}, {new_y})")
+# Example
+print(rotate_vector_cartesian(-1, 0))  
+# Expected output: (0.0, -1.41421356) rotated by -135°
