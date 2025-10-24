@@ -13,10 +13,10 @@
  * CONSTANTS AND DEFINITIONS
  **************************************************************************************************/
 
- #define I2C_SDA             (20) 
- #define I2C_SCL             (21)
+ //#define I2C_SDA             (20) 
+ //#define I2C_SCL             (21)
 
- #define BLUEFRUIT_SPI_RST   (16)
+ //#define BLUEFRUIT_SPI_RST   (16)
  #define JS_STOP_SWTICH      (13)
  #define SYS_LED             (12)
  #define MTR_CS1             (11) 
@@ -25,11 +25,19 @@
  #define BLUEFRUIT_SPI_IRQ   (7)
  #define MTR_ENA_1           (6)
  #define MTR_ENA_0           (5)
- #define BLUEFRUIT_INTERRUPT (4)
+ //#define BLUEFRUIT_INTERRUPT (4)
  #define MTR_ENA_2           (3)
  #define MTR_CS2             (2) 
  /* UART RX and TX pins 0 and 1 are reserved*/
-  
+ 
+
+#define PIN_TX2 16  /*BLE interface*/
+#define PIN_RX2 17  /*BLE interface*/
+#define PIN_TX1 18  /*HWT906 interface*/
+#define PIN_RX1 19  /*HWT906 interface*/
+
+
+
  #define JS_XAXIS_INPUT A1
  #define JS_YAXIS_INPUT A0
  #define ADC_RESOLUTION_FLOAT 1024.0
@@ -62,7 +70,7 @@ typedef enum
 {
     // Init State machine definitions
     INIT_BLE_STAT_FAILED      = 0,
-    INIT_BNO80_STAT_FAILED      = 1,
+    INIT_HWT906_STAT_FAILED      = 1,
     INIT_MOTOR1_STAT_FAILED      = 2,
     INIT_MOTOR2_STAT_FAILED      = 3,
     INIT_MOTOR3_STAT_FAILED      = 4,

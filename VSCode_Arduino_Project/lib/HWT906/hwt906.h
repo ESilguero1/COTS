@@ -1,13 +1,13 @@
 /***********************************************************************************************//**
- * @file       System_Control_App.h
- * @details 
+ * @file       Adafruit_BLE_App.h
+ * @details
  * @author		Miguel Silguero
  * @copyright  Copyright (c) 2024-2025, Horizonless Embedded Solutions LLC
- * @date       12.01.2024 (created)
+ * @date       07.01.2024 (created)
  *
  **************************************************************************************************/
-#ifndef System_Control_App_H
-#define System_Control_App_H
+#ifndef HWT906_H
+#define HWT906_H
 
 /***************************************************************************************************
  * INCLUDES
@@ -15,22 +15,41 @@
 #include "Arduino.h"
 
 /***************************************************************************************************
- * CONSTANTS AND DEFINITIONS
+ * TYPEDEFS
  **************************************************************************************************/
-#define JS_SWITCH_CHK (500)
+
 /***************************************************************************************************
  * PUBLIC FUNCTION PROTOTYPES
  **************************************************************************************************/
 
-class System_Control_App 
+class HWT906_LIB 
 {
-      public:
-            void Init(void);
-            void ServiceSystemResponseApp(void);
-            void ServiceMotor3PowerDisable(void);
-            uint32_t RequestMotorStatus(uint8_t target_motor);
-            void SendIMUdataFrame(void);
-            void SetSysInitstate(uint8_t state);
+    public:
+        struct Vector3f {
+            float x{0}, y{0}, z{0}, temperature{0};
+        };
+
+        void init();
+        bool parseFrame(const uint8_t * buf);
+
+        Vector3f HWTgetAccel() const;
+        Vector3f HWTgetGyro()  const;
+        Vector3f HWTgetEuler() const;
+
+        bool haveFullTriplet() const;
+
+    private:
+        static float  decodeSensor(int16_t raw, float scale);
+        static float  decodeTemp(int16_t raw);
+        static int16_t bufToInt16(const uint8_t* b);
+
+        Vector3f acc_;
+        Vector3f gyro_;
+        Vector3f euler_;
+        bool accValid_{false};
+        bool gyroValid_{false};
+        bool eulerValid_{false};
 };
+
 
 #endif

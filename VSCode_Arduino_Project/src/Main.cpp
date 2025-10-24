@@ -13,9 +13,9 @@
 #include "System_definitions.h"
 #include "debugutils.h"
 #include "CombinedControl.h"
-#include "Adafruit_BLE_App.h"
+#include "BLE_Bridge_App.h"
 #include "System_Control_App.h"
-#include "BNO080_App.h"
+#include "HWT906_App.h"
 #include "LED_App.h"
 #include <AsyncTask.h>
 
@@ -27,8 +27,8 @@
  * MODULE VARIABLES
  **************************************************************************************************/
 AsyncTask asyncTask;                 /* Handles asynchronous tasks */
-BNO080_App BNO080App;                /* IMU application object */
-Adafruit_BLE_App BLE_App;            /* Bluetooth application object */
+HWT906_App HWT906App;                /* IMU application object */
+BLE_Bridge_App BLE_App;            /* Bluetooth application object */
 System_Control_App SystemControlApp; /* System control application object */
 LED_App LEDApp;                      /* IMU application object */
 uint8_t SystemInitState = 0; /* Tracks initialization status of the system */
@@ -56,12 +56,17 @@ void setup()
     delay(200);
     LEDApp.Init();
 
-    if (BNO080App.Init() != 0)              /* Initialize BNO080 IMU module */
+    if (HWT906App.Init() != 0)              /* Initialize HWT906 IMU module */
     {
-        SystemInitState |= (1 << INIT_BNO80_STAT_FAILED);
-    }
+         SystemInitState |= (1 << INIT_HWT906_STAT_FAILED);
+ }
 
     SystemControlApp.Init();                /* Initialize system control */
+
+    if (BLE_App.Init() != 0) /* Initialize Bluetooth Low Energy (BLE) module */
+    {
+       SystemInitState |= (1 << INIT_BLE_STAT_FAILED);
+    }
 
     /* Check motor initialization status and set failure flags if needed */
     if (SystemControlApp.RequestMotorStatus(0) != MOTOR_OK_STATUS[0])
@@ -77,10 +82,7 @@ void setup()
         SystemInitState |= (1 << INIT_MOTOR3_STAT_FAILED);
     }
 
-    if (BLE_App.Init() != 0) /* Initialize Bluetooth Low Energy (BLE) module */
-    {
-       SystemInitState |= (1 << INIT_BLE_STAT_FAILED);
-    }
+
 
     /* enable all, but motor 3 on startup */
     digitalWrite(MTR_ENA_0, LOW);
@@ -94,7 +96,7 @@ void setup()
     asyncTask.repeat(Mtr3PowerDisableCheck, 1000);                  /* Check motor power every second */
     asyncTask.repeat(ServiceIMUapp, IMU_DATA_ACQUSITION_PERIOD);    /* Service IMU periodically */
     asyncTask.repeat(ServiceLEDapp, LED_FREQ_RATE_HZ);              /* Service LED periodically */
-    //asyncTask.repeat(ServiceJSswitch, JS_SWITCH_CHK);              /* Service JS swtich periodically */
+    asyncTask.repeat(ServiceJSswitch, JS_SWITCH_CHK);              /* Service JS swtich periodically */
 }
 
 /***********************************************************************************************//**
@@ -117,13 +119,13 @@ void Mtr3PowerDisableCheck(void)
 }
 
 /***********************************************************************************************//**
- * @details     Service BNO080 application every IMU_DATA_ACQUSITION_PERIOD ms
+ * @details     HWT906 data is collected using an interrupt, this checks for new data and sets errors
  **************************************************************************************************/
 void ServiceIMUapp(void)
 {
-    if ((SystemInitState & (1 << INIT_BNO80_STAT_FAILED)) == 0 ) /*ONly run if init passed for device*/
+    if ((SystemInitState & (1 << INIT_HWT906_STAT_FAILED)) == 0 ) /*ONly run if init passed for device*/
     {
-        BNO080App.Service_BNO080();	
+        HWT906App.CheckIMUDataCollection();	
     }
 }
 
@@ -142,13 +144,14 @@ void ServiceLEDapp(void)
  **************************************************************************************************/
 void ServiceJSswitch(void)
 {
-    static int lastJSstate = HIGH;
-    int JSstate = PIOB->PIO_PDSR & PIO_PDSR_P27;
+    // static int lastJSstate = HIGH;
+    // int JSstate = PIOB->PIO_PDSR & PIO_PDSR_P27;
 
-    if ((lastJSstate == LOW) & (JSstate = LOW))
-    {
-        SystemControlApp.ToggleJSmtrlControlMode();
-    }
-    lastJSstate = JSstate;
+    // if ((lastJSstate == LOW) & (JSstate = LOW))
+    // {
+    //     //SystemControlApp.ToggleJSmtrlControlMode();
+    // }
+    // lastJSstate = JSstate;
 
+    //SystemControlApp.SendIMUdataFrame();
 }

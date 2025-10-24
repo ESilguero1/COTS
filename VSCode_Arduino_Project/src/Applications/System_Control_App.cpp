@@ -17,7 +17,7 @@
 #include "debugutils.h"
 #include "CombinedControl.h"
 #include <SPI.h>
-#include "Adafruit_BLE_App.h"
+#include "BLE_Bridge_App.h"
 
 /***************************************************************************************************
  * CONSTANTS AND DEFINITIONS
@@ -33,7 +33,7 @@ flags motorFlags[3]; // Flags for motor status tracking
 int status[25]; // Array for storing system status data
 extern union floatUnion AveragedIMUdata[6];
 extern uint32_t IMU_Comm_Errors;
-Adafruit_BLE_App BLE_App_sys;            /* Bluetooth application object */
+BLE_Bridge_App BLE_App_sys;            /* Bluetooth application object */
 uint8_t SysInitState = 0; /* Report initialization status of the system */
 
 /***************************************************************************************************
@@ -212,9 +212,11 @@ void  System_Control_App :: SetSysInitstate(uint8_t state)
 /***********************************************************************************************//**
  * @details     Toggle joystick control mode
  **************************************************************************************************/
-void ToggleJSmtrlControlMode(void)
+void  System_Control_App :: SendIMUdataFrame(void)
 {
-	control.SetJSControlMode(!control.GetJSControlMode());
+	onGetIMUData();
+		
+	//control.SetJSControlMode(!control.GetJSControlMode());
 }
 
 // =============== Command Callbacks ===============
@@ -501,7 +503,7 @@ void onGetPower()
 // Format : outputStr = "i,IMU data;"
 void onGetIMUData()
 {
-	char hex_string[11]; // Enough space for "0x" + 8 hex digits + null terminator
+	char hex_string[32]; // Enough space for "0x" + 8 hex digits + null terminator
 
 	outputStr.remove(0);
 	outputStr.concat(F("imu,"));
@@ -511,6 +513,7 @@ void onGetIMUData()
 	for (uint8_t e = 0; e < 6; e++ )
 	{
 		sprintf(hex_string, "%x", AveragedIMUdata[e].i); /*Convert the hex value to a string*/
+		//sprintf(hex_string, "%.2f", AveragedIMUdata[e].f);
 		outputStr.concat(hex_string);
 		outputStr.concat(F(","));
 	}
@@ -519,6 +522,7 @@ void onGetIMUData()
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
 	BLE_App_sys.println(outputStr);
+	
 }
 
 // Format : not changes to outputStr
@@ -767,7 +771,7 @@ void onDirection()
 // Format : not changes to outputStr
 void onJStoggleCntl()
 {
-	ToggleJSmtrlControlMode();
+	//ToggleJSmtrlControlMode();
 	onSuccess();
 }
 
