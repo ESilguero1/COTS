@@ -31,8 +31,8 @@
  /* UART RX and TX pins 0 and 1 are reserved*/
  
 
-#define PIN_TX2 16  /*BLE interface*/
-#define PIN_RX2 17  /*BLE interface*/
+#define PIN_TX3 16  /*BLE interface*/
+#define PIN_RX3 17  /*BLE interface*/
 #define PIN_TX1 18  /*HWT906 interface*/
 #define PIN_RX1 19  /*HWT906 interface*/
 
@@ -47,8 +47,12 @@
  // #define DEBUG_HOME 0
  //#define DEBUG_DIR   1
 // #define DEBUG_COM
+
+// Debug options
+//#define MOTOR_DEBUG 1
+
  // Additional constants
- #define STAND_MTR_VELOCITY 	  (50000)
+ #define STAND_MTR_VELOCITY 	  (45000)
  #define STAND_MTR3_VELOCITY    (250)
  #define MTR3_HOLD_POWER        (1)
  #define MTR3_RUN_POWER         (20)
@@ -56,6 +60,7 @@
 
  #define MTR_STATUS_SIZE	      (25)
  #define MOTOR_MICRO_STEPS      (200) //Motor is (1.8) 360/1.8
+ #define MOTOR_STEPS_PER_DEGREE (25600)
 
 /***************************************************************************************************
  * TYPEDEFS
@@ -76,13 +81,11 @@ typedef enum
     INIT_MOTOR3_STAT_FAILED      = 4,
 } SystemInitState_e;
 
-#if (DEBUG == 1) /* Define different values for runtime vs debug. Debug sessions causes status info to return unexpected values*/
-  const unsigned int MOTOR_OK_STATUS[3] = {12587092, 12587092, 12587028};
-#else
-  const unsigned int MOTOR_OK_STATUS[3] = {13111380, 13111380, 13111316};
+
+const unsigned long MOTOR_OK_STATUS[3] = {12500000, 12500000, 12500000};
+
+const unsigned long MOTOR_OK_STATUS_1[3] = {13200000, 13200000, 13200000};
+
+
+
 #endif
-
-#endif
-
-
-

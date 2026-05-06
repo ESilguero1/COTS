@@ -126,12 +126,28 @@ MotorControl :: MotorControl() {
 	XACTUAL_READ.address 		= ADDRESS_XACTUAL;
 	XACTUAL_READ.data 			= 0x00000000;
 
+	VACTUAL_READ.rw 			= READ;
+	VACTUAL_READ.address 		= ADDRESS_VACTUAL;
+	VACTUAL_READ.data 			= 0x00000000;
+
+	AMAX_READ.rw 				= READ;
+	AMAX_READ.address 			= ADDRESS_AMAX;
+	AMAX_READ.data 				= 0x00000000;
+
+	DMAX_READ.rw 				= READ;
+	DMAX_READ.address 			= ADDRESS_DMAX;
+	DMAX_READ.data 				= 0x00000000;
+
+	IHOLD_IRUN_READ.rw 			= READ;
+	IHOLD_IRUN_READ.address 	= ADDRESS_IHOLD_IRUN;
+	IHOLD_IRUN_READ.data 		= 0x00000000;
+
 }
 
 /* ======================================================================
 	Constructor functiona to make a motor object. Requires the Chip Select (cs)
 	pin, the enable output pin, and the motor ID as inputs. Note that the pins
-	are active low. 
+	are active low.
 ====================================================================== */
 
 MotorControl :: MotorControl(byte csPin, byte enablePin, int ID) {
@@ -256,10 +272,26 @@ MotorControl :: MotorControl(byte csPin, byte enablePin, int ID) {
 	XACTUAL_READ.rw 			= READ;
 	XACTUAL_READ.address 		= ADDRESS_XACTUAL;
 	XACTUAL_READ.data 			= 0x00000000;
+
+	VACTUAL_READ.rw 			= READ;
+	VACTUAL_READ.address 		= ADDRESS_VACTUAL;
+	VACTUAL_READ.data 			= 0x00000000;
+
+	AMAX_READ.rw 				= READ;
+	AMAX_READ.address 			= ADDRESS_AMAX;
+	AMAX_READ.data 				= 0x00000000;
+
+	DMAX_READ.rw 				= READ;
+	DMAX_READ.address 			= ADDRESS_DMAX;
+	DMAX_READ.data 				= 0x00000000;
+
+	IHOLD_IRUN_READ.rw 			= READ;
+	IHOLD_IRUN_READ.address 	= ADDRESS_IHOLD_IRUN;
+	IHOLD_IRUN_READ.data 		= 0x00000000;
 }
 
 /* ======================================================================
-	Sets the motor pins, required when using the empty constructor. Not 
+	Sets the motor pins, required when using the empty constructor. Not
 	needed when using the non-empty constructor.
  ====================================================================== */
 
@@ -434,12 +466,12 @@ void MotorControl :: readStatus() {
 	status_position_reached_event = MotorControl::_checkBit( & _outputDatagram,7);
 	status_sg2 = MotorControl::_checkBit( & _outputDatagram,13);
 	status_sg2_event = MotorControl::_checkBit( & _outputDatagram,6);
-	
+	status_standstill = MotorControl::_checkBit( & _outputDatagram,10); // vzero: VACTUAL=0, immediate
+
 	MotorControl::sendData(&GCONF_READ);
 	// Flags for the DRV_STATUS register
 	status_openLoad_A = MotorControl::_checkBit( & _outputDatagram,29);
 	status_openLoad_B = MotorControl::_checkBit( & _outputDatagram,30);
-	status_standstill = MotorControl::_checkBit( & _outputDatagram,31);
 	status_shortToGround_A = MotorControl::_checkBit( & _outputDatagram,28);
 	status_shortToGround_B = MotorControl::_checkBit( & _outputDatagram,27);
 	status_overtemperatureWarning = MotorControl::_checkBit( & _outputDatagram,26);
@@ -799,19 +831,27 @@ int MotorControl :: getMotorID() {
 }
 
 unsigned long MotorControl :: getPowerLevel() {
-	return IHOLD_IRUN.data;
+	MotorControl :: sendData(&IHOLD_IRUN_READ);
+	MotorControl :: sendData(&IHOLD_IRUN_READ);
+	return i_datagram.data;
 }
 
 unsigned long MotorControl :: getVelocity() {
-	return VMAX.data;
+	MotorControl :: sendData(&VACTUAL_READ);
+	MotorControl :: sendData(&VACTUAL_READ);
+	return i_datagram.data;
 }
 
 unsigned long MotorControl :: getAcceleration() {
-	return AMAX.data;
+	MotorControl :: sendData(&AMAX_READ);
+	MotorControl :: sendData(&AMAX_READ);
+	return i_datagram.data;
 }
 
 unsigned long MotorControl :: getDeceleration() {
-	return DMAX.data;
+	MotorControl :: sendData(&DMAX_READ);
+	MotorControl :: sendData(&DMAX_READ);
+	return i_datagram.data;
 }
 
 signed long MotorControl :: getXtarget() {
@@ -1063,20 +1103,9 @@ void MotorControl ::constForward(unsigned long velocity)
 		MotorControl ::setRampMode(forwardDirection.address);
 	}
  	currentPosition = MotorControl ::getXactual();
-	if (MotorControl ::motorID == 0)
+	if (MotorControl ::motorID == 1)
 	{
-		if ((currentPosition < -4582400) || (currentPosition >= 4608000)) // Limit range between -179 and 180 degrees
-		{
-			Serial.print(" JY Motor 0 Range Check Failed.");
-		}
-		else
-		{
-			isRangeCheckOk = true;
-		}
-	}
-	else // motor 1
-	{
-		if ((currentPosition < -2304000) || (currentPosition > 2304000)) // Limit range betwee -90 and 90 degress
+		if ((currentPosition < (-90*MOTOR_STEPS_PER_DEGREE)) || (currentPosition > (90*MOTOR_STEPS_PER_DEGREE))) // Limit range betwee -90 and 90 degress
 		{
 			Serial.print(" JY Motor 1 Range Check Failed.");
 		}

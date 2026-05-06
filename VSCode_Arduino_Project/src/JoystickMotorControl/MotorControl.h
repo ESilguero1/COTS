@@ -15,8 +15,7 @@
 #include "Arduino.h"
 #include "Joystick.h"
 
-// Debug options
-// #define MOTOR_DEBUG 1
+
 
 
 // Define Registers for TMC5130
@@ -214,6 +213,10 @@ class MotorControl {
 		datagram SW_MODE;
 
 		datagram XACTUAL_READ;
+		datagram VACTUAL_READ;
+		datagram AMAX_READ;
+		datagram DMAX_READ;
+		datagram IHOLD_IRUN_READ;
 		datagram DRV_STATUS_READ;
 		datagram GCONF_READ;
 		datagram GSTAT_READ;

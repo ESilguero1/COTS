@@ -17,7 +17,7 @@
 struct flags
 {
 	public:
-		bool isJSEnable 		= true;
+		bool isJSEnable 		= false;
 		bool isSeeking			= false;
 		bool direction			= true;
 		bool isPositioning		= false;
@@ -53,7 +53,8 @@ class CombinedControl {
       void status(uint8_t motor_id, int * statusBits);                                       // returns the status bits of the motor
       unsigned long sgStatus(uint8_t motor_id);                                            // returns the stallguard status info
 
-      bool standstill(uint8_t motor_id);                                                   // checks if the motor is at a standstill
+      bool standstill(uint8_t motor_id);  
+      uint8_t positionReached(uint8_t motor_id);                                                 // checks if the motor is at a standstill
       void Setstandstill(uint8_t motor_id, bool state);                                    // sets motor standstill value
 
       double getXactual(uint8_t motor_id);                                                 // returns the position of the motor
@@ -75,7 +76,7 @@ class CombinedControl {
       void setDirections(uint8_t motor_id, bool forwardDirection, bool forwardSwitch);       // sets the dir of switches and which is the forward dir
       void switchActiveEnable(uint8_t motor_id, bool fw, bool bw);                           // allows the user to change switches active high or low
       void SetSlowFastJoyStick(uint8_t slow_fast);
-      void SetMirrorMode(uint8_t mirror_mode ) ;
+      void EnableMotor(uint8_t motor_id ) ;
       void SetJSControlMode(uint8_t js_cntrl_mode) ;
       uint8_t GetJSControlMode(void) ;
 

@@ -36,6 +36,8 @@ extern uint32_t IMU_Comm_Errors;
 BLE_Bridge_App BLE_App_sys;            /* Bluetooth application object */
 uint8_t SysInitState = 0; /* Report initialization status of the system */
 
+uint32_t motorStats[3]={0};
+
 /***************************************************************************************************
  * PRIVATE FUNCTION PROTOTYPES
  **************************************************************************************************/
@@ -73,6 +75,8 @@ void onSeek(); /* Seek operation for motor */
 void onResolution(); /* Set resolution settings */
 void onActiveSettings(); /* Get active settings */
 void onPing(); /* Ping command handler */
+double imu_heading_to_unsigned_360(double imu_heading);
+double unsigned_360_to_signed_imu(double heading_360);
 
 /***************************************************************************************************
  * FUNCTION DEFINITIONS
@@ -94,9 +98,9 @@ void System_Control_App :: Init(void)
     pinMode(MTR_ENA_2, OUTPUT);
     
     /* enable all, but motor 3 on startup */
-    digitalWrite(MTR_ENA_0, 0);
-    digitalWrite(MTR_ENA_1, 0);
-    digitalWrite(MTR_ENA_2, 1);
+    digitalWrite(MTR_ENA_0, LOW);
+    digitalWrite(MTR_ENA_1, LOW);
+    digitalWrite(MTR_ENA_2, HIGH);
     
     /* Configure joystick stop switch */
 	PIOB->PIO_PER=(1<<27); //Enable PIO for GPIO P13
@@ -189,8 +193,8 @@ uint32_t  System_Control_App :: RequestMotorStatus(uint8_t target_motor)
 	{
 		motorStat |= status[i]<<i; /* Rebuild hex value */
 	}
-
-	outputStr.concat(motorStat); /* print out for debug only */
+	motorStats[target_motor]=motorStat;
+	outputStr.concat(motorStats[target_motor]); /* print out for debug only */
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
 	BLE_App_sys.println(outputStr);
@@ -341,25 +345,50 @@ void OnUnknownCommand()
 void onRequestMotorStatus()
 {
 	uint8_t target_motor = cmdMessenger.readInt16Arg();
-	outputStr.remove(0);
-	outputStr.concat(F("m,"));
-	outputStr.concat(millis());
+	uint8_t positionReached = 0;
+	uint8_t stand_Stills = 0;
 
-	control.status(target_motor, &status[0]);
-
-	for (int i = 0; i < MTR_STATUS_SIZE; i++)
+	for (uint8_t i = 0; i < 20; i++)
 	{
-		outputStr.concat(F(","));
-		outputStr.concat(status[i]);
-	}
-	
-	outputStr.concat(F(","));
-	outputStr.concat(SysInitState);
+		outputStr.remove(0);
+		outputStr.concat(F("M0,"));
+		control.status(0, &status[0]);
+		//StopSwitchL = status[2];
+		positionReached = control.positionReached(0);
+		stand_Stills = status[3]; 
+		for (int i = 0; i < MTR_STATUS_SIZE; i++)
+		{
+			outputStr.concat(F(","));
+			outputStr.concat(status[i]);
+		}
 
-	outputStr.concat(F(";"));
-	Serial.println(outputStr);
-	BLE_App_sys.println(outputStr);
+		outputStr.concat(F("M1,"));
+
+		control.status(1, &status[0]);
+		//StopSwitchL |= (status[2] << 1);
+		positionReached |= (control.positionReached(1) << 1);
+		stand_Stills |= (status[3] << 1); 
+
+		for (int i = 0; i < MTR_STATUS_SIZE; i++)
+		{
+			outputStr.concat(F(","));
+			outputStr.concat(status[i]);
+		}
+		
+		outputStr.concat(F(", stand,"));
+		outputStr.concat(stand_Stills); 
+		outputStr.concat(F(","));
+		outputStr.concat(positionReached);
+		outputStr.concat(F(";"));
+		//outputStr.concat(F("\r\n"));
+		Serial.println(outputStr);
+		BLE_App_sys.println(outputStr);
+		delay(1600);
+	}
+
+
 }
+
 
 // Format : outputStr = "g,time,status;"
 void onRequestStallStatus()
@@ -375,12 +404,93 @@ void onRequestStallStatus()
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
 	BLE_App_sys.println(outputStr);
+
+  	// double Actualpos = 0;
+	// double NewPos = 0.0;
+
+	// if(target_motor == 0)
+	// {
+  	// 	Actualpos = 270.0;
+	// 	NewPos = 0.0;
+	// }
+	// else
+
+	// {
+	//   	Actualpos = 0.0;
+	// 	NewPos = 270.0;	
+	// }
+
+	// double ActualPosNormalized = unsigned_360_to_signed_imu(Actualpos);
+	// double NewPosNormalized = 	unsigned_360_to_signed_imu(NewPos);
+
+	// signed long ActualposToSend = (signed long)(ActualPosNormalized * -25600.0);
+	// signed long NewPosToSend = (signed long)(NewPosNormalized * -25600.0);
+
+	// control.changePosNoMove(0, ActualposToSend);
+
+	// control.goPos(0, NewPosToSend);
+
+	// outputStr.concat(F(","));
+	// outputStr.concat(ActualposToSend);
+	// outputStr.concat(F(","));
+	// outputStr.concat(NewPosToSend);
+	// outputStr.concat(F(";")); 
+
+}
+
+/**
+ * @brief Converts a signed IMU heading (-179.0 to 180.0) into a standard, 
+ * unsigned 0 to 359 degree range.
+ * * @param imu_heading The heading value from the IMU in the range [-179.0, 180.0].
+ * @return double The heading in the range [0.0, 360.0).
+ */
+double imu_heading_to_unsigned_360(double imu_heading)
+{
+    // Use fmod() to ensure the base value is within the primary cycle, 
+    // preserving sign (e.g., -45 remains -45).
+    double heading = fmod(imu_heading, 360.0); 
+    
+    if (heading < 0.0)
+    {
+        // Add 360 to shift negative values (e.g., -90.0 -> 270.0)
+        heading += 360.0;
+    }
+    
+    // In practice, since the input is limited to 180, this check isn't strictly necessary,
+    // but it makes the function robust against any 360 inputs.
+    return heading == 360.0 ? 0.0 : heading;
+}
+
+/**
+ * @brief Converts an unsigned 0 to 359 degree heading back into the signed IMU range 
+ * (e.g., -179.0 to 180.0).
+ * * @param heading_360 The heading value in the unsigned range [0.0, 359.99...].
+ * @return double The heading in the signed range [-180.0, 180.0].
+ */
+double unsigned_360_to_signed_imu(double heading_360)
+{
+    // Ensure the input is wrapped to 0-360 range just in case (defensive coding)
+    double heading = fmod(heading_360, 360.0);
+    
+    if (heading < 0.0)
+    { 
+        heading += 360.0; 
+    }
+    
+    if (heading > 180.0)
+    {
+        // Subtract 360 to shift values from (180, 360) to (-180, 0)
+        return heading - 360.0;
+    }
+    
+    return heading;
 }
 
 // Format : outputStr = "m,time,oldpos,newpos;"
 void onRequestSetPosNoMove()
 {
 	uint8_t target_motor = cmdMessenger.readInt16Arg();
+	unsigned long new_position = (unsigned long)cmdMessenger.readInt32Arg();
 	outputStr.remove(0);
 	outputStr.concat(F("d,"));
 	outputStr.concat(millis());
@@ -388,7 +498,7 @@ void onRequestSetPosNoMove()
 
 	outputStr.concat(control.getXactual(target_motor));
 	outputStr.concat(F(","));
-	control.changePosNoMove(target_motor, cmdMessenger.readDoubleArg());
+	control.changePosNoMove(target_motor, new_position);
 	outputStr.concat(control.getXactual(target_motor));
 
 	outputStr.concat(F(";"));
@@ -412,7 +522,7 @@ void onSetSlowFastJSMotion()
 void onSetJSMirrorMode()
 {
 	uint8_t mirror_mode_nfig = cmdMessenger.readInt16Arg();
-	control.SetMirrorMode(mirror_mode_nfig);
+	//control.SetMirrorMode(mirror_mode_nfig);
 	outputStr.concat(F("mirror_mode_nfig,"));
 	outputStr.concat(mirror_mode_nfig);
 	outputStr.concat(F(";"));
@@ -504,11 +614,43 @@ void onGetPower()
 void onGetIMUData()
 {
 	char hex_string[32]; // Enough space for "0x" + 8 hex digits + null terminator
+	uint8_t positionReached = 0;
+	uint8_t PositionReachedM3 = 0;
+	unsigned long motorVelocity = 0;
+
+	control.status(0, &status[0]);
+	motorVelocity = control.getVelocity(0);
+	if ((motorVelocity < 5) && (control.standstill(0) == 1))
+	{
+		positionReached = 1;
+	}
+	
+	//positionReached |= ((bool)control.positionReached(0) << 1);
+
+	control.status(1, &status[0]);
+	motorVelocity = control.getVelocity(1);
+	if ((motorVelocity < 5) && (control.standstill(1) == 1))
+	{
+		positionReached |= (1 << 1);
+	}
+
+	control.status(2, &status[0]);
+	motorVelocity = control.getVelocity(2);
+	//if ((motorVelocity < 5) && (control.standstill(2) == 1))
+	if (motorVelocity < 5)
+	{
+		positionReached |= (2 << 1);
+	}
+
+	//positionReached |= ((bool)control.positionReached(1) << 5);
+
+	control.status(2, &status[0]);
+	motorVelocity = control.getVelocity(2);
+	PositionReachedM3 = control.standstill(2);
+	PositionReachedM3 |= ((bool)control.positionReached(2) << 1);
 
 	outputStr.remove(0);
 	outputStr.concat(F("imu,"));
-	//outputStr.concat(millis());
-	//outputStr.concat(F(","));
 
 	for (uint8_t e = 0; e < 6; e++ )
 	{
@@ -519,6 +661,10 @@ void onGetIMUData()
 	}
 
 	outputStr.concat(IMU_Comm_Errors);
+	outputStr.concat(F(","));
+	outputStr.concat(PositionReachedM3); // standstill status bit
+	outputStr.concat(F(","));
+	outputStr.concat(positionReached);
 	outputStr.concat(F(";"));
 	Serial.println(outputStr);
 	BLE_App_sys.println(outputStr);
@@ -583,11 +729,14 @@ void onConstantBackward()
 void onMovePosition()
 {
 	uint8_t target_motor = cmdMessenger.readInt16Arg();
+	
+
 	_checkJS(target_motor);
 	if (!motorFlags[target_motor].isSeeking)
 	{
-		double pos = cmdMessenger.readDoubleArg();
-		control.goPos(target_motor, pos); // Note that the default if no argument read is to go home
+		unsigned long new_position = (unsigned long)cmdMessenger.readInt32Arg();
+		control.EnableMotor(target_motor);
+		control.goPos(target_motor, new_position); // Note that the default if no argument read is to go home
 #ifdef DEBUG_COM
 		Serial.print("Position: ");
 		Serial.println(pos);

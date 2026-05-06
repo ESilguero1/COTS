@@ -58,8 +58,8 @@ uint8_t BLE_Bridge_App :: Init()
 	uint8_t initState = 1; /* Initialize state variable, 1 indicates failure by default */
 
   // Link serial (Serial2)
-  pinMode(PIN_TX2, OUTPUT);
-  pinMode(PIN_RX2, INPUT);
+  pinMode(PIN_TX3, OUTPUT);
+  pinMode(PIN_RX3, INPUT);
   LINK_SERIAL.begin(LINK_BAUD);
   delay(50);
 
@@ -70,11 +70,13 @@ uint8_t BLE_Bridge_App :: Init()
     if (frame_len == 0) 
     {
       Serial.println("Error: build_frame failed (buffer too small)");
-    } else 
+    } 
+    else 
     {
       // send to XIAO via Serial2
       LINK_SERIAL.write(tx_frame_buf, frame_len);
       LINK_SERIAL.flush();
+      initState =0;
     }
 
 

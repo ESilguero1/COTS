@@ -69,15 +69,15 @@ void setup()
     }
 
     /* Check motor initialization status and set failure flags if needed */
-    if (SystemControlApp.RequestMotorStatus(0) != MOTOR_OK_STATUS[0])
+    if ((SystemControlApp.RequestMotorStatus(0) < MOTOR_OK_STATUS[0]) || (SystemControlApp.RequestMotorStatus(0) > MOTOR_OK_STATUS_1[0]))
     {
         SystemInitState |= (1 << INIT_MOTOR1_STAT_FAILED);
     }
-    if (SystemControlApp.RequestMotorStatus(1) != MOTOR_OK_STATUS[1])
+    if ((SystemControlApp.RequestMotorStatus(1) < MOTOR_OK_STATUS[1]) || (SystemControlApp.RequestMotorStatus(1) > MOTOR_OK_STATUS_1[1]))
     {
         SystemInitState |= (1 << INIT_MOTOR2_STAT_FAILED);
     }
-    if (SystemControlApp.RequestMotorStatus(2) != MOTOR_OK_STATUS[2])
+    if ((SystemControlApp.RequestMotorStatus(2) < MOTOR_OK_STATUS[2]) || (SystemControlApp.RequestMotorStatus(2) > MOTOR_OK_STATUS_1[2]))
     {
         SystemInitState |= (1 << INIT_MOTOR3_STAT_FAILED);
     }
@@ -95,7 +95,7 @@ void setup()
     /* Schedule periodic tasks for motor power check and IMU servicing */
     asyncTask.repeat(Mtr3PowerDisableCheck, 1000);                  /* Check motor power every second */
     asyncTask.repeat(ServiceIMUapp, IMU_DATA_ACQUSITION_PERIOD);    /* Service IMU periodically */
-    asyncTask.repeat(ServiceLEDapp, LED_FREQ_RATE_HZ);              /* Service LED periodically */
+    asyncTask.repeat(ServiceLEDapp, LED_FREQ_RATE_MS);              /* Service LED periodically */
     asyncTask.repeat(ServiceJSswitch, JS_SWITCH_CHK);              /* Service JS swtich periodically */
 }
 

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>COTS – Data &amp; Command Flow</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0f1117; color: #e2e8f0; padding: 32px 24px; }
+  h1 { text-align: center; font-size: 1.4rem; font-weight: 600; letter-spacing: 0.08em;
+       color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; }
+  .subtitle { text-align: center; font-size: 0.78rem; color: #475569; margin-bottom: 36px; }
+
+  .canvas { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; max-width: 1180px; margin: 0 auto; }
+
+  /* ── Flow panels ── */
+  .flow { background: #13161f; border: 1px solid #1e293b; border-radius: 10px; padding: 24px; }
+  .flow-title {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
+    padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #1e293b;
+  }
+
+  /* ── Flow steps ── */
+  .step {
+    display: flex; align-items: center; gap: 10px;
+    background: #0f1117; border: 1px solid #1e293b; border-radius: 6px;
+    padding: 9px 12px; margin-bottom: 4px; position: relative;
+  }
+  .step-icon { font-size: 1rem; flex-shrink: 0; width: 22px; text-align: center; }
+  .step-body { flex: 1; }
+  .step-name { font-size: 0.8rem; font-weight: 600; }
+  .step-detail { font-size: 0.65rem; color: #64748b; margin-top: 2px; line-height: 1.4; }
+  .step-tag {
+    font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 2px 7px; border-radius: 10px; flex-shrink: 0;
+  }
+
+  /* Arrow between steps */
+  .step-arrow {
+    text-align: center; font-size: 0.85rem; padding: 1px 0 1px 32px;
+    color: #334155; display: flex; align-items: center; gap: 6px;
+  }
+  .step-arrow .label {
+    font-size: 0.6rem; color: #475569; font-style: italic; flex: 1;
+  }
+  .step-arrow .arrow { color: #334155; font-size: 1rem; }
+
+  /* Colour tags */
+  .tag-cmd  { background: #1c2a3a; color: #7dd3fc; border: 1px solid #0ea5e9; }
+  .tag-ack  { background: #1a2e1a; color: #86efac; border: 1px solid #16a34a; }
+  .tag-imu  { background: #2d1a2a; color: #f0abfc; border: 1px solid #a855f7; }
+  .tag-spi  { background: #3a2a10; color: #fcd34d; border: 1px solid #d97706; }
+  .tag-ble  { background: #1e2a3a; color: #93c5fd; border: 1px solid #3b82f6; }
+  .tag-sys  { background: #2a1a1a; color: #fca5a5; border: 1px solid #ef4444; }
+  .tag-js   { background: #1a2a1a; color: #a7f3d0; border: 1px solid #10b981; }
+
+  /* Step left border accent */
+  .cmd-step  { border-left: 3px solid #0ea5e9; }
+  .ack-step  { border-left: 3px solid #16a34a; }
+  .imu-step  { border-left: 3px solid #a855f7; }
+  .spi-step  { border-left: 3px solid #d97706; }
+  .ble-step  { border-left: 3px solid #3b82f6; }
+  .sys-step  { border-left: 3px solid #ef4444; }
+  .js-step   { border-left: 3px solid #10b981; }
+
+  /* Wide panel (full width) */
+  .flow.full { grid-column: 1 / -1; }
+
+  /* Timing annotations */
+  .timing-row {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px;
+    padding-top: 14px; border-top: 1px solid #1e293b;
+  }
+  .timing-chip {
+    font-size: 0.62rem; background: #0f1117; border: 1px solid #1e293b;
+    border-radius: 4px; padding: 4px 8px; color: #64748b;
+  }
+  .timing-chip b { color: #94a3b8; }
+
+  /* Notes box */
+  .note {
+    font-size: 0.68rem; color: #64748b; background: #13161f;
+    border: 1px solid #1e293b; border-radius: 6px; padding: 10px 14px;
+    margin-top: 10px; line-height: 1.6;
+  }
+  .note b { color: #94a3b8; }
+
+  /* SPI pipeline detail */
+  .pipeline {
+    display: flex; gap: 4px; margin: 8px 0 0; flex-wrap: wrap;
+  }
+  .pipe-cell {
+    font-size: 0.58rem; border-radius: 4px; padding: 3px 7px;
+    border: 1px solid #334155; color: #64748b; background: #0f1117;
+    text-align: center;
+  }
+  .pipe-cell.active { background: #1c2a3a; border-color: #0ea5e9; color: #7dd3fc; }
+  .pipe-cell.result { background: #1a2e1a; border-color: #16a34a; color: #86efac; }
+
+  /* Response format box */
+  .resp-box {
+    font-family: 'Courier New', monospace; font-size: 0.65rem;
+    background: #0a0d14; border: 1px solid #1e293b; border-radius: 4px;
+    padding: 6px 10px; color: #94a3b8; margin-top: 6px;
+  }
+  .resp-box span { color: #7dd3fc; }
+</style>
+</head>
+<body>
+
+<h1>COTS — Data &amp; Command Flow</h1>
+<div class="subtitle">Command path · IMU telemetry path · Status readback · Async scheduling · Joystick control</div>
+
+<div class="canvas">
+
+  <!-- ══════════════════════════════════════════════
+       FLOW 1: COMMAND PATH (Python → Motor)
+  ═══════════════════════════════════════════════ -->
+  <div class="flow">
+    <div class="flow-title" style="color:#7dd3fc">① Command Path — Python Host → Motor</div>
+
+    <div class="step cmd-step">
+      <div class="step-icon">🖥</div>
+      <div class="step-body">
+        <div class="step-name">Python Host</div>
+        <div class="step-detail">Builds CmdMessenger string e.g. <code>30,0,45000;</code><br>Sends over USB Serial (COM3 · 115200 baud)</div>
+      </div>
+      <span class="step-tag tag-cmd">CMD</span>
+    </div>
+    <div class="step-arrow"><span class="arrow">↓</span><span class="label">USB CDC Serial · ASCII frame ending with ;</span></div>
+
+    <div class="step cmd-step">
+      <div class="step-icon">📡</div>
+      <div class="step-body">
+        <div class="step-name">CmdMessenger · feedinSerialData()</div>
+        <div class="step-detail">Called every loop() iteration · parses command ID and args · dispatches to registered callback</div>
+      </div>
+      <span class="step-tag tag-cmd">PARSE</span>
+    </div>
+    <div class="step-arrow"><span class="arrow">↓</span><span class="label">callback dispatch by command enum (10–49)</span></div>
+
+    <div class="step sys-step">
+      <div class="step-icon">⚙️</div>
+      <div class="step-body">
+        <div class="step-name">System_Control_App — Callback</div>
+        <div class="step-detail">e.g. onConstantForward() · validates flags · reads motor ID + velocity args · checks seek/position state</div>
+      </div>
+      <span class="step-tag tag-sys">APP</span>
+    </div>
+    <div class="step-arrow"><span class="arrow">↓</span><span class="label">direct method call</span></div>
+
+    <div class="step spi-step">
+      <div class="step-icon">🔧</div>
+      <div class="step-body">
+        <div class="step-name">CombinedControl</div>
+        <div class="step-detail">Range check · ramp mode selection · delegates to MotorControl[n]</div>
+      </div>
+      <span class="step-tag tag-spi">CTRL</span>
+    </div>
+    <div class="step-arrow"><span class="arrow">↓</span><span class="label">MotorControl method call</span></div>
+
+    <div class="step spi-step">
+      <div class="step-icon">📦</div>
+      <div class="step-body">
+        <div class="step-name">MotorControl[n] — sendData()</div>
+        <div class="step-detail">Builds 40-bit SPI datagram (WRITE bit | address, 32-bit data)<br>Asserts CS pin · transfers 5 bytes · de-asserts CS</div>
+      </div>
+      <span class="step-tag tag-spi">SPI</span>
+    </div>
+    <div class="step-arrow"><span class="arrow">↓</span><span class="label">SPI MODE3 · MSBFIRST · CLK/8 · individual CS pins</span></div>
+
+    <div class="step spi-step">
+      <div class="step-icon">⚡</div>
+      <div class="step-body">
+        <div class="step-name">TMC5130 Register Write</div>
+        <div class="step-detail">e.g. VMAX (0x27) · RAMPMODE (0x20) · XTARGET (0x2D)<br>Motor executes motion profile autonomously</div>
+      </div>
+      <span class="step-tag tag-spi">HW</span>
+    </div>
+
+    <div class="step-arrow"><span class="arrow">↑</span><span class="label">acknowledgement bubbles back up</span></div>
+    <div class="step ack-step">
+      <div class="step-icon">✅</div>
+      <div class="step-body">
+        <div class="step-name">onSuccess() / onFail()</div>
+        <div class="step-detail">Writes response to Serial + BLE simultaneously</div>
+        <div class="resp-box"><span>S,1;</span>  (success)    <span>S,0;</span>  (fail)    <span>e, unknown command;</span></div>
+      </div>
+      <span class="step-tag tag-ack">ACK</span>
+    </div>
+
+    <div class="note">
+      <b>Command enum ranges:</b> 10–12 = requests · 20–27 = getters · 30–39 = setters · 40–49 = control ops<br>
+      Every response ends with <b>;</b> and is mirrored to both Serial and BLE_App_sys.println()
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       FLOW 2: IMU TELEMETRY PATH
+  ═══════════════════════════════════════════════ -->
+  <div class="flow">
+    <div class="flow-title" style="color:#f0abfc">② IMU Telemetry Path — Sensor → Python</div>
+
+    <div class="step imu-step">
+      <div class="step-icon">🧭</div>
+      <div class="step-body">
+        <div class="step-name">HWT906 IMU</div>
+        <div class="step-detail">6-axis AHRS · outputs accel, gyro, mag frames<br>Connected via UART1 (pins 18/19)</div>
+      </div>
+      <span class="step-tag tag-imu">HW</span>
+    </div>
+    <div class="step-arrow"><span class="arrow">↓</span><span class="label">UART1 RX interrupt · binary frame protocol</span></div>
+
+    <div class="step imu-step">
+      <div class="step-icon">📥</div>
+      <div class="step-body">
+        <div class="step-name">HWT906_App · CheckIMUDataCollection()</div>
+        <div class="step-detail">Called by AsyncTask every <b>233 ms</b><br>Parses frames · accumulates samples into AveragedIMUdata[6]<br>Counts communication errors → IMU_Comm_Errors</div>
+      </div>
+      <span class="step-tag tag-imu">COLLECT</span>
+    </div>
+    <div class="step-arrow"><span class="arrow">↓</span><span class="label">extern AveragedIMUdata[6] (floatUnion) · extern IMU_Comm_Errors</span></div>
+
+    <div class="step imu-step">
+      <div class="step-icon">📊</div>
+      <div class="step-body">
+        <div class="step-name">onGetIMUData() — triggered by GET_IMU_AVE_DATA (cmd 27)</div>
+        <div class="step-detail">
+          Reads motor standstill + position reached for all 3 motors<br>
+          Packs into positionReached byte (bits 0,1,4,5) + PositionReachedM3 byte (bits 0,1)
+        </div>
+      </div>
+      <span class="step-tag tag-imu">PACK</span>
+    </div>
+    <div class="step-arrow"><span class="arrow">↓</span><span class="label">sprintf hex encoding per axis (floatUnion.i → hex string)</span></div>
+
+    <div class="step ack-step">
+      <div class="step-icon">📤</div>
+      <div class="step-body">
+        <div class="step-name">Serial.println() + BLE_App_sys.println()</div>
+        <div class="step-detail">Dual-channel output: USB CDC + BLE UART</div>
+        <div class="resp-box"><span>imu,</span>hexAx,hexAy,hexAz,hexGx,hexGy,hexGz,<span>errCnt,M3stat,M12stat;</span></div>
+      </div>
+      <span class="step-tag tag-ack">TX</span>
+    </div>
+    <div class="step-arrow"><span class="arrow">↓</span><span class="label">USB Serial or BLE UART</span></div>
+
+    <div class="step imu-step">
+      <div class="step-icon">🖥</div>
+      <div class="step-body">
+        <div class="step-name">Python Host</div>
+        <div class="step-detail">Parses imu frame · decodes hex floats · uses motor status bits for closed-loop control</div>
+      </div>
+      <span class="step-tag tag-imu">RECV</span>
+    </div>
+
+    <div class="note">
+      <b>positionReached byte layout:</b><br>
+      bit 0 = M0 standstill (vzero) · bit 1 = M0 posReached<br>
+      bit 4 = M1 standstill (vzero) · bit 5 = M1 posReached<br>
+      <b>PositionReachedM3:</b> bit 0 = M2 standstill · bit 1 = M2 posReached
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       FLOW 3: SPI STATUS READBACK
+  ═══════════════════════════════════════════════ -->
+  <div class="flow">
+    <div class="flow-title" style="color:#fcd34d">③ SPI Status Readback — TMC5130 Register Pipeline</div>
+
+    <div class="step spi-step">
+      <div class="step-icon">🔍</div>
+      <div class="step-body">
+        <div class="step-name">MotorControl::readStatus()</div>
+        <div class="step-detail">Called via CombinedControl::status() · reads RAMP_STAT + DRV_STATUS + GCONF + GSTAT</div>
+      </div>
+      <span class="step-tag tag-spi">READ</span>
+    </div>
+
+    <div style="margin: 10px 0 6px; font-size: 0.65rem; color: #64748b;">TMC5130 SPI pipeline — each response = result of <em>previous</em> read request:</div>
+    <div class="pipeline">
+      <div class="pipe-cell">T1: RAMP_STAT<br><span style="color:#475569">← stale</span></div>
+      <div class="pipe-cell active">T2: RAMP_STAT<br>← RAMP_STAT✓</div>
+      <div class="pipe-cell active">T3: RAMP_STAT<br>← RAMP_STAT✓</div>
+      <div class="pipe-cell result">T4: DRV_STATUS<br>← RAMP_STAT ★</div>
+      <div class="pipe-cell result">T5: GCONF<br>← DRV_STATUS ★</div>
+      <div class="pipe-cell">T6: GSTAT<br>← GCONF✓</div>
+      <div class="pipe-cell">T7: GSTAT<br>← GSTAT✓</div>
+    </div>
+    <div style="font-size:0.6rem;color:#475569;margin:4px 0 10px 2px">★ = where bit extraction happens · T1 is pipeline flush</div>
+
+    <div class="step spi-step">
+      <div class="step-icon">📋</div>
+      <div class="step-body">
+        <div class="step-name">RAMP_STAT (0x35) — extracted at T4 response</div>
+        <div class="step-detail">
+          bit 0: stop_l · bit 1: stop_r · bit 2: latch_l · bit 3: latch_r<br>
+          bit 6: sg_event · bit 7: pos_reached_event · bit 8: vel_reached<br>
+          bit 9: position_reached · <b>bit 10: vzero → status_standstill</b> · bit 13: sg
+        </div>
+      </div>
+      <span class="step-tag tag-spi">RAMP</span>
+    </div>
+
+    <div class="step spi-step">
+      <div class="step-icon">📋</div>
+      <div class="step-body">
+        <div class="step-name">DRV_STATUS (0x6F) — extracted at T5 response</div>
+        <div class="step-detail">
+          bit 25: overtemp_shutdown · bit 26: overtemp_warning<br>
+          bit 27: shortToGround_B · bit 28: shortToGround_A<br>
+          bit 29: openLoad_A · bit 30: openLoad_B · bit 31: stst (not used for standstill)
+        </div>
+      </div>
+      <span class="step-tag tag-spi">DRV</span>
+    </div>
+
+    <div class="note">
+      <b>Key fix:</b> standstill now reads RAMP_STAT bit 10 (<b>vzero</b> — VACTUAL=0, immediate)<br>
+      rather than DRV_STATUS bit 31 (<b>stst</b> — timer-based, ~87 ms lag at 12 MHz clock).<br>
+      getVelocity() reads VACTUAL (0x22) live from chip, not the cached VMAX write-register.
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       FLOW 4: ASYNC SCHEDULING + JOYSTICK
+  ═══════════════════════════════════════════════ -->
+  <div class="flow">
+    <div class="flow-title" style="color:#a7f3d0">④ Async Scheduling &amp; Joystick Control Loop</div>
+
+    <div class="step js-step">
+      <div class="step-icon">⏱</div>
+      <div class="step-body">
+        <div class="step-name">AsyncTask::loop() — called every loop() iteration</div>
+        <div class="step-detail">Non-preemptive cooperative scheduler · fires callbacks when their interval has elapsed</div>
+      </div>
+      <span class="step-tag tag-js">SCHED</span>
+    </div>
+
+    <div style="margin: 10px 0 4px; font-size: 0.65rem; color: #64748b;">Registered periodic tasks:</div>
+
+    <div class="step js-step">
+      <div class="step-icon">🔁</div>
+      <div class="step-body">
+        <div class="step-name">ServiceIMUapp · 233 ms</div>
+        <div class="step-detail">Guards on INIT_HWT906_STAT_FAILED · calls HWT906App.CheckIMUDataCollection()</div>
+      </div>
+      <span class="step-tag tag-js">IMU</span>
+    </div>
+
+    <div class="step js-step">
+      <div class="step-icon">💡</div>
+      <div class="step-body">
+        <div class="step-name">ServiceLEDapp · 250 ms</div>
+        <div class="step-detail">LEDApp.Service_LED() · blinks SYS_LED (pin 12) encoding SystemInitState byte</div>
+      </div>
+      <span class="step-tag tag-js">LED</span>
+    </div>
+
+    <div class="step js-step">
+      <div class="step-icon">🕹</div>
+      <div class="step-body">
+        <div class="step-name">Joystick path (in loop via ServiceSystemResponseApp)</div>
+        <div class="step-detail">
+          motorFlags[0].isJSEnable → CombinedControl::enableJoystick()<br>
+          ADC read A0/A1 → threshold + range scale → constForward/Reverse per axis<br>
+          Hysteresis: update only if velocity changed &gt;35% or &lt;35%<br>
+          JS control mode: mtr3JSControl toggles between motor 2 only vs motors 0+1
+        </div>
+      </div>
+      <span class="step-tag tag-js">JS</span>
+    </div>
+
+    <div class="step sys-step">
+      <div class="step-icon">🛑</div>
+      <div class="step-body">
+        <div class="step-name">Mtr3PowerDisableCheck · 1000 ms</div>
+        <div class="step-detail">
+          Reads VACTUAL for motor 2 · if 0 &lt; velocity &lt; 160 → stop(2)<br>
+          Prevents motor 2 coasting at near-zero speed after decel
+        </div>
+      </div>
+      <span class="step-tag tag-sys">SAFE</span>
+    </div>
+
+    <div class="timing-row">
+      <div class="timing-chip"><b>loop()</b> — unbounded, as fast as MCU allows</div>
+      <div class="timing-chip"><b>IMU acquire</b> — 233 ms period</div>
+      <div class="timing-chip"><b>LED</b> — 250 ms period</div>
+      <div class="timing-chip"><b>JS update</b> — 400 ms internal timer</div>
+      <div class="timing-chip"><b>M3 check</b> — 1000 ms period</div>
+      <div class="timing-chip"><b>BLE service</b> — every loop()</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       FLOW 5: INIT SEQUENCE (full width)
+  ═══════════════════════════════════════════════ -->
+  <div class="flow full">
+    <div class="flow-title" style="color:#fca5a5">⑤ Startup Initialization Sequence — setup()</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+
+      <div class="step sys-step" style="flex:1;min-width:130px">
+        <div class="step-body">
+          <div class="step-name">Motor pins LOW</div>
+          <div class="step-detail">ENA 0,1,2 → HIGH (disabled) · delay 200 ms</div>
+        </div>
+      </div>
+      <div style="color:#334155;font-size:1.2rem">→</div>
+
+      <div class="step imu-step" style="flex:1;min-width:130px">
+        <div class="step-body">
+          <div class="step-name">LED_App::Init()</div>
+          <div class="step-detail">SYS_LED pin · ready to encode init failures</div>
+        </div>
+      </div>
+      <div style="color:#334155;font-size:1.2rem">→</div>
+
+      <div class="step imu-step" style="flex:1;min-width:140px">
+        <div class="step-body">
+          <div class="step-name">HWT906_App::Init()</div>
+          <div class="step-detail">UART1 · if fails → INIT_HWT906_STAT_FAILED bit</div>
+        </div>
+      </div>
+      <div style="color:#334155;font-size:1.2rem">→</div>
+
+      <div class="step sys-step" style="flex:1;min-width:160px">
+        <div class="step-body">
+          <div class="step-name">SystemControlApp::Init()</div>
+          <div class="step-detail">SPI · CmdMessenger · CombinedControl::begin()<br>motor[0..2].begin() · attachCommandCallbacks()</div>
+        </div>
+      </div>
+      <div style="color:#334155;font-size:1.2rem">→</div>
+
+      <div class="step ble-step" style="flex:1;min-width:130px">
+        <div class="step-body">
+          <div class="step-name">BLE_App::Init()</div>
+          <div class="step-detail">UART3 · Seeed nRF52 · if fails → INIT_BLE_STAT_FAILED bit</div>
+        </div>
+      </div>
+      <div style="color:#334155;font-size:1.2rem">→</div>
+
+      <div class="step spi-step" style="flex:1;min-width:160px">
+        <div class="step-body">
+          <div class="step-name">Motor status check</div>
+          <div class="step-detail">RequestMotorStatus(0..2)<br>Compare vs MOTOR_OK_STATUS range<br>Set INIT_MOTORn_STAT_FAILED bits</div>
+        </div>
+      </div>
+      <div style="color:#334155;font-size:1.2rem">→</div>
+
+      <div class="step ack-step" style="flex:1;min-width:150px">
+        <div class="step-body">
+          <div class="step-name">Enunciate &amp; schedule</div>
+          <div class="step-detail">LED_App::Set_LED_Code(SystemInitState)<br>asyncTask.repeat() × 4 tasks</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:12px;font-size:0.65rem;color:#475569">
+      SystemInitState is a bit-field: [0]=BLE fail · [1]=HWT906 fail · [2]=Motor0 fail · [3]=Motor1 fail · [4]=Motor2 fail.
+      Motor 3 (index 2) is left disabled (ENA HIGH) after init; enabled on-demand by commands.
+    </div>
+  </div>
+
+</div><!-- end canvas -->
+
+</body>
+</html>

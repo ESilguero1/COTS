@@ -141,7 +141,7 @@ void CombinedControl :: enableJoystick()
 				PresentVal = abs(X_Y_AxisVel[axis]);
 				LastVal = abs(_lastX_Y_vel[axis]);
 
-				if( ( PresentVal > ( LastVal * 1.25)) || ( PresentVal < (LastVal * 0.75) ) ) 
+				if( ( PresentVal > ( LastVal * 1.35)) || ( PresentVal < (LastVal * 0.65) ) ) 
 				{
 					_lastX_Y_vel[axis] = X_Y_AxisVel[axis];
 					CombinedControl :: _setJS(axis, X_Y_AxisVel[axis]);
@@ -414,6 +414,13 @@ bool CombinedControl :: standstill(uint8_t motor_id)
  {
 	return motor[motor_id].status_standstill;
 }
+
+uint8_t CombinedControl :: positionReached(uint8_t motor_id)
+ {
+	return motor[motor_id].status_position_reached_event;
+}
+
+
 /* ======================================================================
 	Sets motor standstill value
  ====================================================================== */
@@ -537,11 +544,28 @@ void CombinedControl :: setResolution(uint8_t motor_id, int resolution) {
  ====================================================================== */
 
 void CombinedControl :: changePosNoMove(uint8_t motor_id, unsigned long position) {
-	motor[motor_id].stop();
+	motor[motor_id].stop(); 							/* stop the motor */
+	motor[motor_id].setRampMode(ADDRESS_MODE_HOLD);		/* set ramp mode to hold */	
+	delay(30);										/* wait for motor to stop */
+	//motor[motor_id].readStatus();						/* wait until motor is at standstill */
+	//unsigned long startTime;
+	//unsigned long lastReadTime;
+	//startTime = millis();
+	// while (motor[motor_id].status_standstill == false) 
+	// {
+	// 	motor[motor_id].readStatus();					/* wait until motor is at standstill */
 
-	motor[motor_id].setRampMode(1);
+	// 	lastReadTime = millis();
+	// 	if(startTime - lastReadTime > 100 ) 			/* timeout after 1 second*/
+	// 	{
+	// 		break;
+	// 	}
+
+	// }
+
 
 	motor[motor_id].setXactual(position);
+	motor[motor_id].setRampMode(ADDRESS_MODE_POSITION);
 	motor[motor_id].setXtarget(position);
 }
 
@@ -582,9 +606,10 @@ void CombinedControl :: SetSlowFastJoyStick(uint8_t slow_fast)
 	enables mirror mode
  ====================================================================== */
 
-void CombinedControl :: SetMirrorMode(uint8_t mirror_mode ) 
+void CombinedControl :: EnableMotor(uint8_t motor_id ) 
 {
-      _mirrorMode = mirror_mode;
+	motor[motor_id].IsPositionMode = true;
+     motor[motor_id].powerEnable();
 }
 
 void CombinedControl :: SetJSControlMode(uint8_t js_cntrl_mode ) 

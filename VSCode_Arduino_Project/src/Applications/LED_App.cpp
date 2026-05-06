@@ -19,7 +19,7 @@
  **************************************************************************************************/
 #define LED_CODE_SIZE 20 /*Defines the size of each LED code pattern.*/
 /* Create a two-dimensional array storing predefined LED blinking patterns*/
-uint8_t LED_CODES[8][LED_CODE_SIZE] = {{1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0},
+uint8_t LED_CODES[8][LED_CODE_SIZE] = { {1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0},
                                         {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                         {1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                         {1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},

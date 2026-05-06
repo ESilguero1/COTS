@@ -151,15 +151,15 @@ inline void Service_HWT906(void)
 
     if (HWT906_Lib.haveFullTriplet()) 
 	{
-        auto acc   = HWT906_Lib.HWTgetAccel();
-        //auto gyro  = HWT906_Lib.HWTgetGyro();
+        //auto acc   = HWT906_Lib.HWTgetAccel();
+        auto gyro  = HWT906_Lib.HWTgetGyro();
         auto euler = HWT906_Lib.HWTgetEuler();
         AveragedIMUdata[0].f = euler.x;
         AveragedIMUdata[1].f = euler.y;
         AveragedIMUdata[2].f = euler.z;
-        AveragedIMUdata[3].f = acc.x;
-        AveragedIMUdata[4].f = acc.y;
-        AveragedIMUdata[5].f = acc.z;
+        AveragedIMUdata[3].f = gyro.x;
+        AveragedIMUdata[4].f = gyro.y;
+        AveragedIMUdata[5].f = gyro.z;
         IMU_FramesCounter++;
     }
     else
